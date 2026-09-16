@@ -3,13 +3,13 @@ import { computed } from '@ember/object';
 import { timeout, task } from 'ember-concurrency';
 
 const DEFAULT_ZOOM = 9.72;
-const DEFAULT_LNG = 40.7125;
-const DEFAULT_LAT = -73.733;
-const DEFAULT_LAT_OFFSET = -0.1692;
+const DEFAULT_LNG = -23.5505;
+const DEFAULT_LAT = -46.6333;
+const DEFAULT_LAT_OFFSET = 0;
 const MIN_ZOOM = 9.5;
 const MAX_BOUNDS = [
-  [-74.5, 40.25],
-  [-73, 41],
+  [-47.0, -24.1],
+  [-46.0, -23.2],
 ];
 
 export default class MainMapService extends Service {
@@ -44,7 +44,7 @@ export default class MainMapService extends Service {
       return this.knownHashIntent.replace('#', '').split('/').reverse();
     }
 
-    return [9.72, 40.7125, -73.733];
+    return [9.72, -23.5505, -46.6333];
   }
 
   @computed('isSelectedBoundsOptions', 'knownHashIntent', 'parsedHash')
