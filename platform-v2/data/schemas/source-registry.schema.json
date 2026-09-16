@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.lotediretor.com.br/source-registry.schema.json",
+  "title": "LoteDiretor Source Registry Entry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "sourceCode",
+    "sourceType",
+    "authority",
+    "datasetCode",
+    "accessClass",
+    "ingestionStatus",
+    "endpoints"
+  ],
+  "properties": {
+    "municipalityIbge": { "type": ["string", "null"] },
+    "sourceCode": { "type": "string", "minLength": 1 },
+    "sourceType": { "type": "string", "minLength": 1 },
+    "authority": { "type": "string", "minLength": 1 },
+    "datasetCode": { "type": "string", "minLength": 1 },
+    "accessClass": { "enum": ["A", "B", "C", "D", "E", "F"] },
+    "parserVersion": { "type": ["string", "null"] },
+    "cadence": { "type": ["string", "null"] },
+    "ingestionStatus": {
+      "enum": ["healthy", "degraded", "broken", "manual", "disabled"]
+    },
+    "license": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": ["string", "null"] },
+        "termsUrl": { "type": ["string", "null"], "format": "uri" },
+        "redistributionAllowed": { "type": ["boolean", "null"] },
+        "commercialUseAllowed": { "type": ["boolean", "null"] },
+        "notes": { "type": ["string", "null"] }
+      }
+    },
+    "endpoints": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "url"],
+        "properties": {
+          "type": { "type": "string", "minLength": 1 },
+          "url": { "type": "string", "format": "uri" },
+          "method": { "type": "string", "default": "GET" },
+          "secretRef": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}
