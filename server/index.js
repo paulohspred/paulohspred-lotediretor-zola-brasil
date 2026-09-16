@@ -6,6 +6,7 @@ const { queryTpcl } = require('./sp-tpcl');
 const { queryAnnualIptu } = require('./sp-iptu-annual');
 const { buildLandUseAnalysis } = require('./sp-land-use');
 const { queryItbiHistory } = require('./sp-itbi-history');
+const { buildSurroundingsAnalysis } = require('./sp-surroundings');
 
 const GEOSAMPA_WFS =
   'https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/ows';
@@ -598,10 +599,14 @@ module.exports = function (app) {
       feature.properties = feature.properties || {};
       feature.properties.id = id;
 
-      const [territorial, siszon, tpcl] = await Promise.all([
+      const [territorial, siszon, tpcl, surroundings] = await Promise.all([
         buildTerritorialAnalysis(nativePayload.features[0].geometry, id),
         querySiszon(feature.properties),
         queryTpcl(feature.properties),
+        buildSurroundingsAnalysis(
+          nativePayload.features[0].geometry,
+          requestGeoSampaJson
+        ),
       ]);
       feature.properties.enquadramentoTerritorial = territorial;
       feature.properties.siszon = siszon;
@@ -611,6 +616,7 @@ module.exports = function (app) {
         feature.properties,
         tpcl
       );
+      feature.properties.entorno = surroundings;
       const urbanParameters = buildUrbanParameters({
         lotArea: Number(feature.properties.qt_area_terreno),
         territorial,

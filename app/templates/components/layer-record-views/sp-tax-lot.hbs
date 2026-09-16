@@ -388,6 +388,81 @@
   </section>
 {{/if}}
 
+{{#if @model.entorno}}
+  <hr class="hide-for-print" />
+  <section class="surroundings-analysis">
+    <h3 class="header-small lot-section-header">
+      Entorno, mobilidade e equipamentos
+    </h3>
+    <p class="text-small dark-gray">
+      Equipamentos oficiais próximos ao lote, ordenados pela distância em metros no
+      sistema cartográfico municipal.
+    </p>
+
+    {{#if @model.entorno.censusSector.available}}
+      <div style="border: 1px solid #ddd; padding: 0.75rem; margin-bottom: 1rem;">
+        <h5 style="margin-bottom: 0.4rem;">Setor Censitário 2022</h5>
+        <div class="data-grid">
+          <label class="data-label">Código IBGE do setor</label>
+          <span class="datum"><strong>{{@model.entorno.censusSector.code}}</strong></span>
+        </div>
+        {{#if @model.entorno.censusSector.areaSquareMeters}}
+          <div class="data-grid">
+            <label class="data-label">Área do setor</label>
+            <span class="datum">{{numeral-format @model.entorno.censusSector.areaSquareMeters "0,0.[00]"}} m²</span>
+          </div>
+        {{/if}}
+        <p class="text-small medium-gray" style="margin-bottom: 0;">
+          Fonte: {{@model.entorno.censusSector.source}}. Este código será usado para
+          associar os agregados do Censo 2022 sem inferir dados individuais.
+        </p>
+      </div>
+    {{/if}}
+
+    {{#each @model.entorno.sections as |nearby|}}
+      <div style="margin-bottom: 1rem;">
+        <h5 style="margin-bottom: 0.25rem;">{{nearby.label}}</h5>
+        {{#if nearby.closest}}
+          <p class="text-small" style="margin-bottom: 0.25rem;">
+            Mais próximo: <strong>{{nearby.closest.name}}</strong> ·
+            <strong>{{nearby.closest.distanceMeters}} m</strong>
+          </p>
+          <p class="text-small medium-gray" style="margin-bottom: 0.35rem;">
+            {{nearby.countWithinRadius}} registro(s) localizado(s) em um raio de
+            {{nearby.radiusMeters}} m.
+          </p>
+          <details style="margin-bottom: 0.5rem;">
+            <summary class="text-small">Ver mais próximos</summary>
+            {{#each nearby.nearest as |place|}}
+              <div style="border-left: 3px solid #ae561f; padding-left: 0.75rem; margin-top: 0.5rem; margin-bottom: 0.65rem;">
+                <strong>{{place.name}}</strong>
+                <span class="medium-gray"> · {{place.distanceMeters}} m</span>
+                {{#each place.details as |detail|}}
+                  <div class="data-grid">
+                    <label class="data-label">{{detail.label}}</label>
+                    <span class="datum">{{detail.value}}</span>
+                  </div>
+                {{/each}}
+              </div>
+            {{/each}}
+          </details>
+        {{else if nearby.unavailable}}
+          <p class="text-small medium-gray">Camada indisponível nesta consulta.</p>
+        {{else}}
+          <p class="text-small medium-gray">
+            Nenhum registro localizado no raio de {{nearby.radiusMeters}} m.
+          </p>
+        {{/if}}
+      </div>
+    {{/each}}
+
+    <p class="text-small medium-gray">
+      Fonte: {{@model.entorno.source}} · Método: {{@model.entorno.method}} ·
+      Consulta: {{@model.entorno.generatedAt}}
+    </p>
+  </section>
+{{/if}}
+
 {{#if @model.parametrosUrbanisticos}}
   <hr class="hide-for-print" />
   <section class="urban-parameters">
