@@ -81,22 +81,19 @@ export default class MainMap extends Component {
 
     const style = JSON.parse(JSON.stringify(originalStyle));
     style.sources = style.sources || {};
-    style.sources['carto-basemap-brasil'] = {
+    style.sources['brasil-basemap'] = {
       type: 'raster',
       tiles: [
-        'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-        'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-        'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-        'https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
       ],
       tileSize: 256,
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+      attribution: 'Tiles &copy; Esri',
     };
 
     const baseLayer = {
-      id: 'carto-basemap-brasil',
+      id: 'brasil-basemap',
       type: 'raster',
-      source: 'carto-basemap-brasil',
+      source: 'brasil-basemap',
       minzoom: 0,
       maxzoom: 20,
     };
