@@ -559,7 +559,24 @@
           <summary class="text-small">Ver usos permitidos ({{zoneUse.counts.permitted}})</summary>
           <ul class="text-small">
             {{#each zoneUse.permitted as |use|}}
-              <li><strong>{{use.code}}</strong> — {{use.description}}</li>
+              <li>
+                <strong>{{use.code}}</strong> — {{use.description}}
+                {{#if use.installation}}
+                  <details style="margin-top: 0.2rem; margin-bottom: 0.35rem;">
+                    <summary class="text-small">Condições de instalação — Quadro 4A</summary>
+                    <p class="text-small medium-gray" style="margin-bottom: 0.25rem;">{{use.installation.summary}}</p>
+                    {{#each use.installation.contextNotes as |conditionNote|}}
+                      <p class="text-small medium-gray" style="margin-bottom: 0.2rem;">{{conditionNote}}</p>
+                    {{/each}}
+                    {{#each use.installation.sourceNotes as |sourceNote|}}
+                      <p class="text-small medium-gray" style="margin-bottom: 0.2rem;">{{sourceNote.note}}</p>
+                    {{/each}}
+                    {{#if use.installation.amendedBy}}
+                      <p class="text-small medium-gray" style="margin-bottom: 0.2rem;">Alterado por {{use.installation.amendedBy}}.</p>
+                    {{/if}}
+                  </details>
+                {{/if}}
+              </li>
             {{/each}}
           </ul>
         </details>
@@ -572,6 +589,21 @@
                 <li>
                   <strong>{{use.code}}</strong> — {{use.description}}
                   {{#if use.note}}<br /><span class="medium-gray">{{use.note}}</span>{{/if}}
+                  {{#if use.installation}}
+                    <details style="margin-top: 0.2rem; margin-bottom: 0.35rem;">
+                      <summary class="text-small">Condições de instalação — Quadro 4A</summary>
+                      <p class="text-small medium-gray" style="margin-bottom: 0.25rem;">{{use.installation.summary}}</p>
+                      {{#each use.installation.contextNotes as |conditionNote|}}
+                        <p class="text-small medium-gray" style="margin-bottom: 0.2rem;">{{conditionNote}}</p>
+                      {{/each}}
+                      {{#each use.installation.sourceNotes as |sourceNote|}}
+                        <p class="text-small medium-gray" style="margin-bottom: 0.2rem;">{{sourceNote.note}}</p>
+                      {{/each}}
+                      {{#if use.installation.amendedBy}}
+                        <p class="text-small medium-gray" style="margin-bottom: 0.2rem;">Alterado por {{use.installation.amendedBy}}.</p>
+                      {{/if}}
+                    </details>
+                  {{/if}}
                 </li>
               {{/each}}
             </ul>
@@ -590,13 +622,14 @@
     {{/each}}
 
     <p class="text-small medium-gray">{{@model.usosUrbanisticos.caveat}}</p>
+    <p class="text-small medium-gray">{{@model.usosUrbanisticos.installation.caveat}}</p>
     <p class="text-small">
       <a href={{@model.usosUrbanisticos.source.url}} target="_blank" rel="noopener noreferrer">
         Abrir Quadro 4 oficial
       </a>
       <span class="pipe">|</span>
-      <a href="https://www.prefeitura.sp.gov.br/cidade/secretarias/upload/010-QUADRO_4A_FINAL.pdf" target="_blank" rel="noopener noreferrer">
-        Abrir Quadro 4A — vagas e condições de instalação
+      <a href={{@model.usosUrbanisticos.installation.source.url}} target="_blank" rel="noopener noreferrer">
+        Abrir Quadro 4A oficial — condições de instalação
       </a>
     </p>
   </section>
