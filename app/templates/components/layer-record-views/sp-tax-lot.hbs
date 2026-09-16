@@ -1,0 +1,99 @@
+<label class="header-label clearfix">
+  LOTE FISCAL
+  <span class="medium-gray">|</span>
+  GEOSAMPA
+  <span data-test-sp-lot-id>{{@model.cd_identificador}}</span>
+</label>
+
+<h1 class="content-header">
+  <span class="address">
+    {{@model.nm_logradouro_completo}}
+    {{#if @model.cd_numero_porta}}, {{@model.cd_numero_porta}}{{/if}}
+  </span>
+</h1>
+
+{{#if @model.tx_complemento_endereco}}
+  <p class="text-small dark-gray" style="margin-bottom: 0.5rem">
+    {{@model.tx_complemento_endereco}}
+  </p>
+{{/if}}
+
+<p class="text-small dark-gray" style="margin-bottom: 1rem">
+  Setor {{@model.cd_setor_fiscal}}
+  <span class="pipe">|</span>
+  Quadra {{@model.cd_quadra_fiscal}}
+  <span class="pipe">|</span>
+  Lote {{@model.cd_lote}}
+  {{#if @model.cd_digito_sql}}
+    <span class="pipe">|</span>
+    Dígito {{@model.cd_digito_sql}}
+  {{/if}}
+</p>
+
+<section class="lot-details">
+  <div class="data-grid">
+    <label class="data-label">Identificador GeoSampa</label>
+    <span class="datum">{{@model.cd_identificador}}</span>
+  </div>
+
+  {{#if @model.cd_identificador_original_lote}}
+    <div class="data-grid">
+      <label class="data-label">Identificador original</label>
+      <span class="datum">{{@model.cd_identificador_original_lote}}</span>
+    </div>
+  {{/if}}
+
+  {{#if @model.tx_situ_lote}}
+    <div class="data-grid">
+      <label class="data-label">Situação do lote</label>
+      <span class="datum">{{@model.tx_situ_lote}}</span>
+    </div>
+  {{/if}}
+
+  {{#if @model.tx_tipo_lote}}
+    <div class="data-grid">
+      <label class="data-label">Tipo de lote</label>
+      <span class="datum">{{@model.tx_tipo_lote}}</span>
+    </div>
+  {{/if}}
+
+  {{#if @model.dc_tipo_uso_imovel}}
+    <div class="data-grid">
+      <label class="data-label">Uso do imóvel</label>
+      <span class="datum">{{@model.dc_tipo_uso_imovel}}</span>
+    </div>
+  {{/if}}
+
+  {{#if @model.qt_area_terreno}}
+    <div class="data-grid">
+      <label class="data-label">Área do terreno</label>
+      <span class="datum">{{numeral-format @model.qt_area_terreno "0,0.[00]"}} m²</span>
+    </div>
+  {{/if}}
+
+  {{#if @model.qt_area_construida}}
+    <div class="data-grid">
+      <label class="data-label">Área construída</label>
+      <span class="datum">{{numeral-format @model.qt_area_construida "0,0.[00]"}} m²</span>
+    </div>
+  {{/if}}
+
+  {{#if @model.cd_cib}}
+    <div class="data-grid">
+      <label class="data-label">CIB</label>
+      <span class="datum">{{@model.cd_cib}}</span>
+    </div>
+  {{/if}}
+
+  {{#if @model.tx_situacao_cib}}
+    <div class="data-grid">
+      <label class="data-label">Situação CIB</label>
+      <span class="datum">{{@model.tx_situacao_cib}}</span>
+    </div>
+  {{/if}}
+</section>
+
+<hr class="hide-for-print" />
+<p class="text-small dark-gray">
+  Fonte cadastral: GeoSampa — Prefeitura de São Paulo.
+</p>

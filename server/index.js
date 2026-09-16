@@ -1,7 +1,8 @@
 const fs = require('fs');
 const https = require('https');
 
-const GEOSAMPA_WFS = 'https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/ows';
+const GEOSAMPA_WFS =
+  'https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/ows';
 const MAX_FEATURES = 5000;
 const MAX_BBOX_SPAN = 0.03;
 const SYSTEM_CA_PATH = '/etc/ssl/certs/ca-certificates.crt';
@@ -23,7 +24,7 @@ if (fs.existsSync(SYSTEM_CA_PATH)) {
 function parseBbox(value) {
   if (typeof value !== 'string') return null;
   const parts = value.split(',').map(Number);
-  if (parts.length !== 4 || parts.some((value) => !Number.isFinite(value))) {
+  if (parts.length !== 4 || parts.some((part) => !Number.isFinite(part))) {
     return null;
   }
 
@@ -31,8 +32,10 @@ function parseBbox(value) {
   if (west >= east || south >= north) return null;
   if (east - west > MAX_BBOX_SPAN || north - south > MAX_BBOX_SPAN) return null;
   if (
-    west < SAO_PAULO_LIMITS.west || east > SAO_PAULO_LIMITS.east ||
-    south < SAO_PAULO_LIMITS.south || north > SAO_PAULO_LIMITS.north
+    west < SAO_PAULO_LIMITS.west ||
+    east > SAO_PAULO_LIMITS.east ||
+    south < SAO_PAULO_LIMITS.south ||
+    north > SAO_PAULO_LIMITS.north
   ) {
     return null;
   }
@@ -45,7 +48,9 @@ function requestGeoSampa(url) {
     const request = https.get(url, httpsOptions, (response) => {
       let body = '';
       response.setEncoding('utf8');
-      response.on('data', (chunk) => { body += chunk; });
+      response.on('data', (chunk) => {
+        body += chunk;
+      });
       response.on('end', () => {
         resolve({ status: response.statusCode || 502, body });
       });
@@ -63,7 +68,8 @@ module.exports = function (app) {
     const bbox = parseBbox(req.query.bbox);
     if (!bbox) {
       res.status(400).json({
-        error: 'bbox inválida; use west,south,east,north dentro do Município de São Paulo e span máximo de 0.03°',
+        error:
+          'bbox inválida; use west,south,east,north dentro do Município de São Paulo e span máximo de 0.03°',
       });
       return;
     }
@@ -96,7 +102,9 @@ module.exports = function (app) {
 
       const upstream = await requestGeoSampa(url);
       if (upstream.status < 200 || upstream.status >= 300) {
-        res.status(502).json({ error: `GeoSampa respondeu HTTP ${upstream.status}` });
+        res
+          .status(502)
+          .json({ error: `GeoSampa respondeu HTTP ${upstream.status}` });
         return;
       }
 
@@ -104,9 +112,65 @@ module.exports = function (app) {
       res.set('Cache-Control', 'public, max-age=30');
       res.status(200).send(upstream.body);
     } catch (error) {
-      const message = error && error.message === 'GEOSAMPA_TIMEOUT'
-        ? 'GeoSampa excedeu o timeout de 15 segundos'
-        : 'Falha ao consultar o GeoSampa';
+      const message =
+        error && error.message === 'GEOSAMPA_TIMEOUT'
+          ? 'GeoSampa excedeu o timeout de 15 segundos'
+          : 'Falha ao consultar o GeoSampa';
+      res.status(502).json({ error: message });
+    }
+  });
+
+  app.get('/api/geosampa/lotes/:id', async (req, res) => {
+    const id = String(req.params.id || '');
+    if (!/^\d+$/.test(id)) {
+      res.status(400).json({ error: 'Identificador de lote inválido' });
+      return;
+    }
+
+    try {
+      const url = new URL(GEOSAMPA_WFS);
+      url.search = new URLSearchParams({
+        service: 'WFS',
+        version: '2.0.0',
+        request: 'GetFeature',
+        typeNames: 'geoportal:lote_cidadao',
+        count: '1',
+        outputFormat: 'application/json',
+        srsName: 'EPSG:4326',
+        CQL_FILTER: `cd_identificador=${id}`,
+      }).toString();
+
+      const upstream = await requestGeoSampa(url);
+      if (upstream.status < 200 || upstream.status >= 300) {
+        res
+          .status(502)
+          .json({ error: `GeoSampa respondeu HTTP ${upstream.status}` });
+        return;
+      }
+
+      const payload = JSON.parse(upstream.body);
+      if (!payload.features || payload.features.length !== 1) {
+        res.status(404).json({ error: 'Lote não encontrado no GeoSampa' });
+        return;
+      }
+
+      const feature = payload.features[0];
+      feature.properties = feature.properties || {};
+      feature.properties.id = id;
+
+      res.set('Content-Type', 'application/geo+json; charset=utf-8');
+      res.set('Cache-Control', 'public, max-age=60');
+      res.status(200).json({
+        ...payload,
+        features: [feature],
+        numberMatched: 1,
+        numberReturned: 1,
+      });
+    } catch (error) {
+      const message =
+        error && error.message === 'GEOSAMPA_TIMEOUT'
+          ? 'GeoSampa excedeu o timeout de 15 segundos'
+          : 'Falha ao consultar o lote no GeoSampa';
       res.status(502).json({ error: message });
     }
   });

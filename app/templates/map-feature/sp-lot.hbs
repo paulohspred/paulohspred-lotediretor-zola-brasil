@@ -1,0 +1,7 @@
+<CartoDataProvider
+  @modelId={{this.model.id}}
+  @modelName="sp-lot" as |lot|
+>
+  <Mapbox::MapFeatureRenderer @model={{lot}} />
+  <LayerRecordViews::SpTaxLot @model={{lot.properties}} />
+</CartoDataProvider>

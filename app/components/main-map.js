@@ -104,6 +104,7 @@ export default class MainMap extends Component {
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
       ],
       tileSize: 256,
+      maxzoom: 18,
       attribution: 'Tiles &copy; Esri',
     };
 
@@ -119,7 +120,8 @@ export default class MainMap extends Component {
     const firstNonBackground = style.layers.findIndex(
       (layer) => layer.type !== 'background'
     );
-    const insertAt = firstNonBackground === -1 ? style.layers.length : firstNonBackground;
+    const insertAt =
+      firstNonBackground === -1 ? style.layers.length : firstNonBackground;
     style.layers.splice(insertAt, 0, baseLayer);
 
     return style;
@@ -224,7 +226,8 @@ export default class MainMap extends Component {
     }
 
     const controller = new AbortController();
-    const requestId = ++this.geoSampaLotsRequestId;
+    this.geoSampaLotsRequestId += 1;
+    const requestId = this.geoSampaLotsRequestId;
     this.geoSampaLotsAbortController = controller;
     const bbox = [west, south, east, north].join(',');
 
@@ -310,6 +313,23 @@ export default class MainMap extends Component {
 
     this.loadGeoSampaLots(map);
     map.on('moveend', () => this.loadGeoSampaLots(map));
+
+    map.on('mouseenter', 'geosampa-lotes-fill', () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', 'geosampa-lotes-fill', () => {
+      map.getCanvas().style.cursor = '';
+    });
+    map.on('click', 'geosampa-lotes-fill', (event) => {
+      const [feature] = event.features || [];
+      const lotId =
+        feature && feature.properties
+          ? feature.properties.cd_identificador
+          : null;
+      if (lotId) {
+        this.router.transitionTo('map-feature.sp-lot', String(lotId));
+      }
+    });
 
     // hide default base style layers
     const basemapLayersToHide = [
