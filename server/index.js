@@ -1,6 +1,9 @@
 const fs = require('fs');
 const https = require('https');
 const { buildUrbanParameters } = require('./sp-lpuos-parameters');
+const { querySiszon } = require('./sp-siszon');
+const { queryTpcl } = require('./sp-tpcl');
+const { buildLandUseAnalysis } = require('./sp-land-use');
 
 const GEOSAMPA_WFS =
   'https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/ows';
@@ -487,6 +490,9 @@ async function buildTerritorialAnalysis(nativeGeometry, lotId) {
       'WFS 2.0 / ECQL — interseção espacial e vínculos cadastrais oficiais',
     analysisCrs: 'EPSG:31983',
     sections: results.filter((result) => result.matches.length > 0),
+    displaySections: results.filter(
+      (result) => result.matches.length > 0 && result.key !== 'zoneamento'
+    ),
     noIncidence: results
       .filter((result) => result.status === 'NAO_IDENTIFICADO')
       .map((result) => result.label),
@@ -589,12 +595,24 @@ module.exports = function (app) {
       const feature = payload.features[0];
       feature.properties = feature.properties || {};
       feature.properties.id = id;
-      feature.properties.enquadramentoTerritorial =
-        await buildTerritorialAnalysis(nativePayload.features[0].geometry, id);
-      feature.properties.parametrosUrbanisticos = buildUrbanParameters({
+
+      const [territorial, siszon, tpcl] = await Promise.all([
+        buildTerritorialAnalysis(nativePayload.features[0].geometry, id),
+        querySiszon(feature.properties),
+        queryTpcl(feature.properties),
+      ]);
+      feature.properties.enquadramentoTerritorial = territorial;
+      feature.properties.siszon = siszon;
+      feature.properties.tpcl = tpcl;
+      const urbanParameters = buildUrbanParameters({
         lotArea: Number(feature.properties.qt_area_terreno),
-        territorial: feature.properties.enquadramentoTerritorial,
+        territorial,
+        siszon,
       });
+      feature.properties.parametrosUrbanisticos = urbanParameters;
+      feature.properties.usosUrbanisticos = buildLandUseAnalysis(
+        urbanParameters.zones.map((zone) => zone.zoneCode)
+      );
 
       res.set('Content-Type', 'application/geo+json; charset=utf-8');
       res.set('Cache-Control', 'public, max-age=60');

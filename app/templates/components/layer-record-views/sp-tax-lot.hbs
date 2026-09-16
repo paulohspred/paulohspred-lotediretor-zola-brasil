@@ -30,6 +30,59 @@
   {{/if}}
 </p>
 
+<div style="color: #ae561f; font-size: 1.25rem; display: flex; flex-flow: row wrap; gap: 1.25rem; margin-bottom: 1rem;">
+  <a target="_blank" href="https://geosampa.prefeitura.sp.gov.br/" rel="noopener noreferrer">
+    <EmberPopover @side="top" @popperContainer="body" @popoverHideDelay={{0}}>
+      Abrir o imóvel no ecossistema oficial GeoSampa
+    </EmberPopover>
+    <FaIcon @icon="map-pin" />
+  </a>
+
+  {{#if @model.siszon.sourceUrl}}
+    <a target="_blank" href={{@model.siszon.sourceUrl}} rel="noopener noreferrer">
+      <EmberPopover @side="top" @popperContainer="body" @popoverHideDelay={{0}}>
+        Consultar zoneamento e histórico no SISZON
+      </EmberPopover>
+      <FaIcon @icon="bolt" />
+    </a>
+  {{/if}}
+
+  <a target="_blank" href="https://iptu.prefeitura.sp.gov.br/" rel="noopener noreferrer">
+    <EmberPopover @side="top" @popperContainer="body" @popoverHideDelay={{0}}>
+      Consultar IPTU e serviços tributários pelo SQL
+    </EmberPopover>
+    <FaIcon @icon="dollar-sign" />
+  </a>
+
+  <a target="_blank" href="https://prefeitura.sp.gov.br/web/licenciamento/w/servicos/6584" rel="noopener noreferrer">
+    <EmberPopover @side="top" @popperContainer="body" @popoverHideDelay={{0}}>
+      Consultar situação e histórico da edificação no CEDI
+    </EmberPopover>
+    <FaIcon @icon="people-roof" />
+  </a>
+
+  <a target="_blank" href={{@model.parametrosUrbanisticos.source.consolidatedUrl}} rel="noopener noreferrer">
+    <EmberPopover @side="top" @popperContainer="body" @popoverHideDelay={{0}}>
+      Abrir a legislação urbanística consolidada
+    </EmberPopover>
+    <FaIcon @icon="road" />
+  </a>
+
+  <a target="_blank" href="https://registradores.onr.org.br/" rel="noopener noreferrer">
+    <EmberPopover @side="top" @popperContainer="body" @popoverHideDelay={{0}}>
+      Acessar RI Digital / Registro de Imóveis para matrícula e certidões
+    </EmberPopover>
+    <FaIcon @icon="home" />
+  </a>
+
+  <a target="_blank" href="https://www.google.com/maps/search/?api=1&query={{@model.nm_logradouro_completo}}%20{{@model.cd_numero_porta}}%20Sao%20Paulo%20SP" rel="noopener noreferrer">
+    <EmberPopover @side="top" @popperContainer="body" @popoverHideDelay={{0}}>
+      Abrir endereço no Google Maps
+    </EmberPopover>
+    <FaIcon @icon="street-view" />
+  </a>
+</div>
+
 <section class="lot-details">
   <div class="data-grid">
     <label class="data-label">Identificador GeoSampa</label>
@@ -57,10 +110,29 @@
     </div>
   {{/if}}
 
-  {{#if @model.dc_tipo_uso_imovel}}
+  {{#if @model.tpcl.tipoUso}}
+    <div class="data-grid">
+      <label class="data-label">Uso fiscal detalhado</label>
+      <span class="datum">{{@model.tpcl.tipoUso}}</span>
+    </div>
+  {{else if @model.dc_tipo_uso_imovel}}
     <div class="data-grid">
       <label class="data-label">Uso do imóvel</label>
       <span class="datum">{{@model.dc_tipo_uso_imovel}}</span>
+    </div>
+  {{/if}}
+
+  {{#if @model.tpcl.tipoTerreno}}
+    <div class="data-grid">
+      <label class="data-label">Tipo de terreno — IPTU</label>
+      <span class="datum">{{@model.tpcl.tipoTerreno}}</span>
+    </div>
+  {{/if}}
+
+  {{#if @model.tpcl.condominio}}
+    <div class="data-grid">
+      <label class="data-label">Código de condomínio — IPTU</label>
+      <span class="datum">{{@model.tpcl.condominio}}</span>
     </div>
   {{/if}}
 
@@ -110,6 +182,53 @@
         {{#each @model.parametrosUrbanisticos.warnings as |warning|}}
           <p class="text-small" style="margin-bottom: 0.4rem;">{{warning}}</p>
         {{/each}}
+      </div>
+    {{/if}}
+
+    {{#if @model.parametrosUrbanisticos.environmentalQuota.paLabel}}
+      <div style="border: 1px solid #ddd; padding: 0.75rem; margin-bottom: 1rem;">
+        <h5 style="margin-bottom: 0.5rem;">Quota Ambiental — Quadro 3A</h5>
+        <div class="data-grid">
+          <label class="data-label">Perímetro de Qualificação Ambiental</label>
+          <span class="datum">{{@model.parametrosUrbanisticos.environmentalQuota.paLabel}}</span>
+        </div>
+        {{#if @model.parametrosUrbanisticos.environmentalQuota.tpMin}}
+          <div class="data-grid">
+            <label class="data-label">TP mínima-base do PA</label>
+            <span class="datum">{{@model.parametrosUrbanisticos.environmentalQuota.tpMin}}</span>
+          </div>
+        {{/if}}
+        {{#if @model.parametrosUrbanisticos.environmentalQuota.qaMinimum}}
+          <div class="data-grid">
+            <label class="data-label">Pontuação QA mínima</label>
+            <span class="datum">{{@model.parametrosUrbanisticos.environmentalQuota.qaMinimum}}</span>
+          </div>
+        {{else}}
+          <div class="data-grid">
+            <label class="data-label">Pontuação QA mínima</label>
+            <span class="datum">Isenta ou não aplicável para esta faixa/perímetro</span>
+          </div>
+        {{/if}}
+        {{#if @model.parametrosUrbanisticos.environmentalQuota.alpha}}
+          <div class="data-grid">
+            <label class="data-label">Fator cobertura vegetal (α)</label>
+            <span class="datum">{{@model.parametrosUrbanisticos.environmentalQuota.alpha}}</span>
+          </div>
+        {{/if}}
+        {{#if @model.parametrosUrbanisticos.environmentalQuota.beta}}
+          <div class="data-grid">
+            <label class="data-label">Fator drenagem (β)</label>
+            <span class="datum">{{@model.parametrosUrbanisticos.environmentalQuota.beta}}</span>
+          </div>
+        {{/if}}
+        <p class="text-small medium-gray" style="margin-bottom: 0.25rem;">
+          {{@model.parametrosUrbanisticos.environmentalQuota.note}}
+        </p>
+        {{#if @model.siszon.sourceUrl}}
+          <a class="text-small" href={{@model.siszon.sourceUrl}} target="_blank" rel="noopener noreferrer">
+            Abrir confirmação oficial no SISZON
+          </a>
+        {{/if}}
       </div>
     {{/if}}
 
@@ -298,6 +417,80 @@
   </section>
 {{/if}}
 
+{{! template-lint-disable no-whitespace-within-word }}
+{{#if @model.usosUrbanisticos.zones.length}}
+  <hr class="hide-for-print" />
+  <section class="land-use-analysis">
+    <h3 class="header-small lot-section-header">
+      Usos permitidos — Quadro 4
+    </h3>
+    <p class="text-small dark-gray">Matriz oficial de usos resolvida para as zonas que incidem no lote. Uma atividade concreta só pode ser concluída após o enquadramento no grupo correto e a aplicação das ressalvas e demais condições legais.</p>
+
+    {{#if @model.usosUrbanisticos.common.conflicts.length}}
+      <div style="border-left: 3px solid #d89a2b; padding-left: 0.75rem; margin-bottom: 1rem;">
+        <strong>O lote possui zonas com permissões diferentes.</strong>
+        <p class="text-small" style="margin-bottom: 0.25rem;">{{@model.usosUrbanisticos.common.conflicts.length}} grupos apresentam conflito entre as zonas incidentes; nesses casos é necessário considerar a parcela do lote atingida por cada zona e a regra aplicável ao projeto.</p>
+      </div>
+    {{/if}}
+
+    {{#each @model.usosUrbanisticos.zones as |zoneUse|}}
+      <div style="margin-bottom: 1.25rem;">
+        <h5 style="margin-bottom: 0.35rem;">Zona {{zoneUse.zoneCode}}</h5>
+        <p class="text-small medium-gray">
+          {{zoneUse.counts.permitted}} permitidos ·
+          {{zoneUse.counts.conditional}} com ressalva ·
+          {{zoneUse.counts.prohibited}} não permitidos
+        </p>
+
+        <details style="margin-bottom: 0.5rem;">
+          <summary class="text-small">Ver usos permitidos ({{zoneUse.counts.permitted}})</summary>
+          <ul class="text-small">
+            {{#each zoneUse.permitted as |use|}}
+              <li><strong>{{use.code}}</strong> — {{use.description}}</li>
+            {{/each}}
+          </ul>
+        </details>
+
+        {{#if zoneUse.conditional.length}}
+          <details style="margin-bottom: 0.5rem;">
+            <summary class="text-small">Ver usos com ressalva legal ({{zoneUse.counts.conditional}})</summary>
+            <ul class="text-small">
+              {{#each zoneUse.conditional as |use|}}
+                <li>
+                  <strong>{{use.code}}</strong> — {{use.description}}
+                  {{#if use.note}}<br /><span class="medium-gray">{{use.note}}</span>{{/if}}
+                </li>
+              {{/each}}
+            </ul>
+          </details>
+        {{/if}}
+
+        <details style="margin-bottom: 0.5rem;">
+          <summary class="text-small">Ver usos não permitidos ({{zoneUse.counts.prohibited}})</summary>
+          <ul class="text-small">
+            {{#each zoneUse.prohibited as |use|}}
+              <li><strong>{{use.code}}</strong> — {{use.description}}</li>
+            {{/each}}
+          </ul>
+        </details>
+      </div>
+    {{/each}}
+
+    <p class="text-small medium-gray">{{@model.usosUrbanisticos.caveat}}</p>
+    <p class="text-small">
+      <a href={{@model.usosUrbanisticos.source.url}} target="_blank" rel="noopener noreferrer">
+        Abrir Quadro 4 oficial
+      </a>
+      <span class="pipe">|</span>
+      <a href="https://www.prefeitura.sp.gov.br/cidade/secretarias/upload/010-QUADRO_4A_FINAL.pdf" target="_blank" rel="noopener noreferrer">
+        Abrir Quadro 4A — vagas e condições de instalação
+      </a>
+    </p>
+  </section>
+{{/if}}
+
+{{! template-lint-enable no-whitespace-within-word }}
+
 {{#if @model.enquadramentoTerritorial}}
   <hr class="hide-for-print" />
   <section class="territorial-analysis">
@@ -310,7 +503,7 @@
       parâmetros construtivos serão resolvidos separadamente pelo motor legal.
     </p>
 
-    {{#each @model.enquadramentoTerritorial.sections as |section|}}
+    {{#each @model.enquadramentoTerritorial.displaySections as |section|}}
       <div style="margin-bottom: 1.25rem;">
         <h6 style="margin-bottom: 0.35rem;">{{section.label}}</h6>
         {{#each section.matches as |match|}}
@@ -333,7 +526,7 @@
           </div>
         {{/each}}
         <p class="text-small medium-gray" style="margin-bottom: 0;">
-          {{section.statusLabel}} · Dataset: {{section.dataset}}
+          {{section.statusLabel}} · Fonte: GeoSampa
         </p>
       </div>
     {{/each}}
@@ -364,6 +557,29 @@
           {{/each}}
         </ul>
       </details>
+    {{/if}}
+
+    {{#if @model.siszon.available}}
+      {{#if @model.siszon.roadClassification.length}}
+        <details style="margin-bottom: 0.75rem;">
+          <summary class="text-small">Classificação viária — SISZON</summary>
+          <ul class="text-small">
+            {{#each @model.siszon.roadClassification as |road|}}
+              <li>{{road.classification}} — {{road.street}} {{#if road.status}}({{road.status}}){{/if}}</li>
+            {{/each}}
+          </ul>
+        </details>
+      {{/if}}
+      {{#if @model.siszon.zoningHistory.length}}
+        <details style="margin-bottom: 0.75rem;">
+          <summary class="text-small">Histórico de zoneamento — SISZON</summary>
+          <ul class="text-small">
+            {{#each @model.siszon.zoningHistory as |history|}}
+              <li>{{history.type}} {{history.perimeter}} · {{history.legislation}} · {{history.status}}</li>
+            {{/each}}
+          </ul>
+        </details>
+      {{/if}}
     {{/if}}
 
     <p class="text-small medium-gray">

@@ -166,6 +166,76 @@ const SPECIAL_TP_BY_ZONE = {
   ZERa: 0.3,
 };
 
+// Quadro 3A — Quota Ambiental. A ordem de qaMin corresponde às faixas:
+// >500–1000, >1000–2500, >2500–5000, >5000–10000 e >10000 m².
+const QA_PARAMETERS = {
+  1: [0.15, 0.25, [0.45, 0.6, 0.7, 0.8, 1.0], 0.5, 0.5],
+  2: [0.15, 0.25, [0.4, 0.52, 0.64, 0.7, 0.86], 0.5, 0.5],
+  3: [0.15, 0.25, [0.37, 0.48, 0.6, 0.65, 0.78], 0.5, 0.5],
+  4: [0.15, 0.25, [0.37, 0.48, 0.6, 0.65, 0.78], 0.5, 0.5],
+  5: [0.15, 0.25, [0.29, 0.37, 0.46, 0.5, 0.57], 0.4, 0.6],
+  6: [0.15, 0.2, [0.34, 0.44, 0.55, 0.6, 0.71], 0.5, 0.5],
+  7: [0.15, 0.2, [0.31, 0.41, 0.51, 0.55, 0.64], 0.3, 0.7],
+  8: [0.15, 0.2, [0.37, 0.48, 0.6, 0.65, 0.78], 0.5, 0.5],
+  9: [0.1, 0.15, [0.37, 0.48, 0.6, 0.65, 0.78], 0.5, 0.5],
+  10: [0.2, 0.25, [0.23, 0.3, 0.37, 0.4, 0.42], 0.6, 0.4],
+  11: [0.2, 0.3, [0.26, 0.34, 0.42, 0.45, 0.49], 0.6, 0.4],
+  12: [0.2, 0.3, [0.26, 0.34, 0.42, 0.45, 0.49], 0.5, 0.5],
+  13: [null, null, [null, null, null, null, null], null, null],
+};
+
+function qaMinimumForLot(values, lotArea) {
+  if (!Number.isFinite(lotArea) || lotArea <= 500) return null;
+  if (lotArea <= 1000) return values[0];
+  if (lotArea <= 2500) return values[1];
+  if (lotArea <= 5000) return values[2];
+  if (lotArea <= 10000) return values[3];
+  return values[4];
+}
+
+function resolveEnvironmentalQuota(pa, lotArea) {
+  const row = QA_PARAMETERS[pa];
+  if (!row) {
+    return {
+      status: 'NAO_RESOLVIDA',
+      statusLabel: 'Perímetro de Qualificação Ambiental não resolvido',
+    };
+  }
+
+  const [tpUpTo500, tpAbove500, qaValues, alpha, beta] = row;
+  const paLabel = `PA ${pa}`;
+  if (pa === 13) {
+    return {
+      status: 'PA13_NAO_APLICAVEL',
+      statusLabel: 'QA não aplicável no PA 13',
+      pa,
+      paLabel,
+      tpMin: null,
+      qaMinimum: null,
+      alpha,
+      beta,
+      qaApplies: false,
+      note: 'O PA 13 corresponde às Macroáreas de Contenção Urbana e Uso Sustentável e de Preservação dos Ecossistemas Naturais; o Quadro 3A indica NA para QA.',
+    };
+  }
+
+  const qaApplies = Number.isFinite(lotArea) && lotArea > 500;
+  return {
+    status: 'RESOLVIDA',
+    statusLabel: `${paLabel} resolvido pelo SISZON`,
+    pa,
+    paLabel,
+    tpMin: Number.isFinite(lotArea) && lotArea <= 500 ? tpUpTo500 : tpAbove500,
+    qaMinimum: qaMinimumForLot(qaValues, lotArea),
+    alpha,
+    beta,
+    qaApplies,
+    note: qaApplies
+      ? 'QA mínima aplicável conforme a faixa de área do lote no Quadro 3A.'
+      : 'Lotes com área total menor ou igual a 500 m² são, em regra, isentos da aplicação da QA, sem prejuízo da taxa de permeabilidade e das exceções legais.',
+  };
+}
+
 function unpackRow(row) {
   const [
     caMin,
@@ -339,9 +409,19 @@ function calculateSingleZonePotential(zone, lotArea) {
   };
 }
 
-function buildUrbanParameters({ lotArea, territorial }) {
+function buildUrbanParameters({ lotArea, territorial, siszon }) {
   const zoneCodes = zoneCodesFromTerritorial(territorial);
   const zones = zoneCodes.map((zoneCode) => resolveZone(zoneCode, lotArea));
+  const environmentalQuota = resolveEnvironmentalQuota(siszon?.qa?.pa, lotArea);
+  if (environmentalQuota.status === 'RESOLVIDA') {
+    zones.forEach((zone) => {
+      if (zone.tpStatus === 'REQUER_PERIMETRO_QA') {
+        zone.tpMin = environmentalQuota.tpMin;
+        zone.tpStatus = 'RESOLVIDA_PELO_PA';
+        zone.tpSource = environmentalQuota.paLabel;
+      }
+    });
+  }
   const warnings = [];
 
   if (zoneCodes.length === 0) {
@@ -373,7 +453,7 @@ function buildUrbanParameters({ lotArea, territorial }) {
   }
   if (zones.some((zone) => zone.tpStatus === 'REQUER_PERIMETRO_QA')) {
     warnings.push(
-      'A Taxa de Permeabilidade/Quota Ambiental depende do Perímetro de Qualificação Ambiental (Quadro 3A). O PA ainda não foi resolvido automaticamente para este lote.'
+      'A Taxa de Permeabilidade/Quota Ambiental depende do Perímetro de Qualificação Ambiental (Quadro 3A), mas o PA não pôde ser confirmado automaticamente no SISZON para este lote.'
     );
   }
   if (
@@ -405,6 +485,8 @@ function buildUrbanParameters({ lotArea, territorial }) {
         : 'Análise condicionada por múltiplas incidências',
     lotArea,
     source: LPUOS_SOURCE,
+    siszon,
+    environmentalQuota,
     zones,
     potential,
     warnings,
