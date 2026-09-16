@@ -71,7 +71,9 @@ export default class LabsMap extends mapboxGlMap {
         meta: { mapboxStyle },
       } = this.layerGroups || {};
 
-      if (mapboxStyle) assign(this.initOptions || {}, { style: mapboxStyle });
+      if (mapboxStyle && !(this.initOptions && this.initOptions.style)) {
+        assign(this.initOptions || {}, { style: mapboxStyle });
+      }
     }
   }
 
