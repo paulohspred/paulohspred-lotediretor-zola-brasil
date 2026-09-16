@@ -17,6 +17,19 @@ const selectedLineLayer = selectedLayers.line;
 const comparisonSelectedFillLayer = comparisonSelectedLayers.fill;
 const comparisonSelectedLineLayer = comparisonSelectedLayers.line;
 
+const GEOSAMPA_LOTS_SOURCE_ID = 'geosampa-lotes';
+const GEOSAMPA_LOTS_MIN_ZOOM = 17;
+const GEOSAMPA_MAX_BBOX_SPAN = 0.03;
+const EMPTY_FEATURE_COLLECTION = {
+  type: 'FeatureCollection',
+  features: [],
+};
+
+function clearGeoSampaLots(map) {
+  const source = map.getSource(GEOSAMPA_LOTS_SOURCE_ID);
+  if (source) source.setData(EMPTY_FEATURE_COLLECTION);
+}
+
 // Custom Control
 const MeasurementText = function () {};
 
@@ -57,6 +70,10 @@ export default class MainMap extends Component {
   drawnFeatureLayers = drawnFeatureLayers;
 
   highlightedLayerId = null;
+
+  geoSampaLotsAbortController = null;
+
+  geoSampaLotsRequestId = 0;
 
   windowResize() {
     return new Promise((resolve) => {
@@ -175,6 +192,60 @@ export default class MainMap extends Component {
 
   comparisonSelectedLineLayer = comparisonSelectedLineLayer;
 
+  async loadGeoSampaLots(map) {
+    const source = map.getSource(GEOSAMPA_LOTS_SOURCE_ID);
+    if (!source) return;
+
+    if (map.getZoom() < GEOSAMPA_LOTS_MIN_ZOOM) {
+      if (this.geoSampaLotsAbortController) {
+        this.geoSampaLotsAbortController.abort();
+        this.geoSampaLotsAbortController = null;
+      }
+      clearGeoSampaLots(map);
+      return;
+    }
+
+    const bounds = map.getBounds();
+    const west = bounds.getWest();
+    const south = bounds.getSouth();
+    const east = bounds.getEast();
+    const north = bounds.getNorth();
+
+    if (
+      east - west > GEOSAMPA_MAX_BBOX_SPAN ||
+      north - south > GEOSAMPA_MAX_BBOX_SPAN
+    ) {
+      clearGeoSampaLots(map);
+      return;
+    }
+
+    if (this.geoSampaLotsAbortController) {
+      this.geoSampaLotsAbortController.abort();
+    }
+
+    const controller = new AbortController();
+    const requestId = ++this.geoSampaLotsRequestId;
+    this.geoSampaLotsAbortController = controller;
+    const bbox = [west, south, east, north].join(',');
+
+    try {
+      const response = await fetch(
+        `/api/geosampa/lotes?bbox=${encodeURIComponent(bbox)}`,
+        { signal: controller.signal }
+      );
+      const geojson = await response.json();
+      if (!response.ok) {
+        throw new Error(geojson.error || `HTTP ${response.status}`);
+      }
+      if (requestId !== this.geoSampaLotsRequestId) return;
+      source.setData(geojson);
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        console.error('Falha ao carregar lotes do GeoSampa', error);
+      }
+    }
+  }
+
   @action
   handleMapLoad(map) {
     window.map = map;
@@ -206,6 +277,39 @@ export default class MainMap extends Component {
     );
     map.addControl(geoLocateControl, 'top-left');
     map.addControl(new MeasurementText(), 'top-left');
+
+    if (!map.getSource(GEOSAMPA_LOTS_SOURCE_ID)) {
+      map.addSource(GEOSAMPA_LOTS_SOURCE_ID, {
+        type: 'geojson',
+        data: EMPTY_FEATURE_COLLECTION,
+      });
+
+      map.addLayer({
+        id: 'geosampa-lotes-fill',
+        type: 'fill',
+        source: GEOSAMPA_LOTS_SOURCE_ID,
+        minzoom: GEOSAMPA_LOTS_MIN_ZOOM,
+        paint: {
+          'fill-color': '#c66a1b',
+          'fill-opacity': 0.08,
+        },
+      });
+
+      map.addLayer({
+        id: 'geosampa-lotes-line',
+        type: 'line',
+        source: GEOSAMPA_LOTS_SOURCE_ID,
+        minzoom: GEOSAMPA_LOTS_MIN_ZOOM,
+        paint: {
+          'line-color': '#9b4d0d',
+          'line-width': 1.2,
+          'line-opacity': 0.9,
+        },
+      });
+    }
+
+    this.loadGeoSampaLots(map);
+    map.on('moveend', () => this.loadGeoSampaLots(map));
 
     // hide default base style layers
     const basemapLayersToHide = [
