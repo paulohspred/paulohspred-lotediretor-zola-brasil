@@ -74,6 +74,43 @@ export default class MainMap extends Component {
     return this.layerGroups;
   }
 
+  @computed('layerGroupsMeta.mapboxStyle')
+  get brasilMapStyle() {
+    const originalStyle = this.get('layerGroupsMeta.mapboxStyle');
+    if (!originalStyle) return originalStyle;
+
+    const style = JSON.parse(JSON.stringify(originalStyle));
+    style.sources = style.sources || {};
+    style.sources['carto-basemap-brasil'] = {
+      type: 'raster',
+      tiles: [
+        'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        'https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+      ],
+      tileSize: 256,
+      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+    };
+
+    const baseLayer = {
+      id: 'carto-basemap-brasil',
+      type: 'raster',
+      source: 'carto-basemap-brasil',
+      minzoom: 0,
+      maxzoom: 20,
+    };
+
+    style.layers = style.layers || [];
+    const firstNonBackground = style.layers.findIndex(
+      (layer) => layer.type !== 'background'
+    );
+    const insertAt = firstNonBackground === -1 ? style.layers.length : firstNonBackground;
+    style.layers.splice(insertAt, 0, baseLayer);
+
+    return style;
+  }
+
   @computed('bookmarks.[]')
   get bookmarkedLotsLayer() {
     const bookmarks = this.get('bookmarks.[]');
