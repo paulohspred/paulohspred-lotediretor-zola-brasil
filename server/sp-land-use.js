@@ -1,4 +1,5 @@
 const quadro4 = require('./sp-quadro4-uses.json');
+const quadro4a = require('./sp-quadro4a');
 
 const STATUS_LABELS = {
   PERMITIDO: 'Permitido',
@@ -27,7 +28,7 @@ function ruleFor(entry, zoneCode) {
   return { status, note };
 }
 
-function formatUse(code, entry, zoneRule) {
+function formatUse(code, entry, zoneRule, zoneCode, lotArea) {
   return {
     code,
     group: entry.g,
@@ -36,14 +37,20 @@ function formatUse(code, entry, zoneRule) {
     statusLabel: STATUS_LABELS[zoneRule.status] || zoneRule.status,
     noteCode: zoneRule.note,
     note: zoneRule.note ? quadro4.notes[zoneRule.note] || null : null,
+    installation: quadro4a.buildInstallationCondition({
+      code,
+      zoneCode,
+      lotArea,
+      description: entry.d,
+    }),
   };
 }
 
-function forZone(zoneCode) {
+function forZone(zoneCode, lotArea) {
   const uses = Object.entries(quadro4.uses)
     .map(([code, entry]) => {
       const rule = ruleFor(entry, zoneCode);
-      return rule ? formatUse(code, entry, rule) : null;
+      return rule ? formatUse(code, entry, rule, zoneCode, lotArea) : null;
     })
     .filter(Boolean);
 
@@ -92,9 +99,10 @@ function commonStatus(zoneCodes, entry) {
   return 'CONFLITO_ENTRE_ZONAS';
 }
 
-function buildLandUseAnalysis(zoneCodes = []) {
+function buildLandUseAnalysis(zoneCodes = [], options = {}) {
+  const lotArea = Number(options.lotArea);
   const uniqueZones = [...new Set(zoneCodes.filter(Boolean))];
-  const zones = uniqueZones.map(forZone);
+  const zones = uniqueZones.map((zoneCode) => forZone(zoneCode, lotArea));
   const common = Object.entries(quadro4.uses).map(([code, entry]) => ({
     code,
     group: entry.g,
@@ -109,6 +117,12 @@ function buildLandUseAnalysis(zoneCodes = []) {
       : 'Matriz de usos não resolvida por ausência de zona',
     source: quadro4.source,
     notes: quadro4.notes,
+    installation: {
+      source: quadro4a.source,
+      notes: quadro4a.notes,
+      caveat:
+        'As fórmulas do Quadro 4A usam, conforme o caso, área construída computável ou unidades habitacionais do projeto. A área fiscal existente do imóvel não substitui a área computável do projeto. Exceções que dependem apenas da zona e da área do lote são resolvidas automaticamente.',
+    },
     zoneCodes: uniqueZones,
     zones,
     common: {
