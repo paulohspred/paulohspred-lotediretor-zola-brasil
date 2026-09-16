@@ -3,6 +3,7 @@ const https = require('https');
 const { buildUrbanParameters } = require('./sp-lpuos-parameters');
 const { querySiszon } = require('./sp-siszon');
 const { queryTpcl } = require('./sp-tpcl');
+const { queryAnnualIptu } = require('./sp-iptu-annual');
 const { buildLandUseAnalysis } = require('./sp-land-use');
 
 const GEOSAMPA_WFS =
@@ -604,6 +605,7 @@ module.exports = function (app) {
       feature.properties.enquadramentoTerritorial = territorial;
       feature.properties.siszon = siszon;
       feature.properties.tpcl = tpcl;
+      feature.properties.iptuAnual = queryAnnualIptu(feature.properties, tpcl);
       const urbanParameters = buildUrbanParameters({
         lotArea: Number(feature.properties.qt_area_terreno),
         territorial,

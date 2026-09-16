@@ -95,7 +95,7 @@ async function queryTpcl(properties = {}) {
       cib: item.CdCib || null,
       situacaoCib: item.TxSituacaoCib || null,
       contributorNameAvailable: false,
-      note: 'O endpoint público lote-a-lote atual do GeoSampa/TPCL não devolve o nome do contribuinte; esse campo deve ser obtido da base anual aberta de IPTU.',
+      note: 'O endpoint público lote-a-lote atual do GeoSampa/TPCL não devolve o nome do contribuinte. A publicação anual aberta de IPTU atualmente também não possui esse campo.',
     };
   } catch (error) {
     return {
