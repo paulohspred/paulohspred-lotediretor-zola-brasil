@@ -1,0 +1,9 @@
+{
+  auto_https off
+  admin off
+}
+
+:8088 {
+  encode zstd gzip
+  respond /healthz 200
+}

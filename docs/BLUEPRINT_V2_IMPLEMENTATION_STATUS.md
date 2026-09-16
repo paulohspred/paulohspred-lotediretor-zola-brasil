@@ -10,7 +10,7 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 
 | Etapa | Blueprint | Estado atual | Próximo gate |
 |---|---|---|---|
-| 0 | Fundação | **INICIADA** | monorepo v2, CI/CD, design tokens, Keycloak, Caddy, PostgreSQL/PostGIS, object storage, OTel |
+| 0 | Fundação | **PARCIAL / RUNTIME LOCAL PROVADO** | Platform API/Auth contracts, realm Keycloak, app shells e promoção para staging |
 | 1 | Core territorial | **PARCIAL / SP FORTE** | Source Registry persistente, IBGE nacional, evidence lineage, Parcel Resolver genérico, MVT, relatório v1 por API |
 | 2 | UX cliente | **PARCIAL / LEGACY ZOLA** | Next.js site/login/client shell e migração progressiva do Explorer/mapa |
 | 3 | Imóvel 360 | **NÃO INICIADA** | property/development/explorer/market/CRM/AVM contracts e telas |

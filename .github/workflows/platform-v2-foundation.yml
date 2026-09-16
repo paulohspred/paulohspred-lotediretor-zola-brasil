@@ -1,0 +1,42 @@
+name: Platform v2 foundation
+on:
+  push:
+    paths:
+      - 'platform-v2/**'
+      - '.github/workflows/platform-v2-foundation.yml'
+  pull_request:
+    paths:
+      - 'platform-v2/**'
+      - '.github/workflows/platform-v2-foundation.yml'
+
+jobs:
+  validate-foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate contracts and compose
+        run: |
+          python3 -m json.tool platform-v2/data/schemas/source-registry.schema.json >/dev/null
+          docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example \
+            --profile migrate --profile bootstrap --profile identity --profile search --profile observability --profile edge config >/dev/null
+      - name: Start data foundation
+        run: |
+          docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example up -d postgres valkey nats minio
+      - name: Migrate and seed
+        run: |
+          docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example --profile migrate run --rm migrate-platform
+          docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example --profile bootstrap run --rm minio-init
+      - name: Verify database
+        run: |
+          count=$(docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example exec -T postgres \
+            psql -U lotediretor -d lotediretor_platform -Atc 'SELECT count(*) FROM core.source_registry;')
+          test "$count" = 9
+          docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example exec -T postgres \
+            psql -U lotediretor -d lotediretor_platform -Atc "SELECT postgis_version();"
+      - name: Compose logs on failure
+        if: failure()
+        run: docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example logs --no-color
+      - name: Cleanup
+        if: always()
+        run: docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example down -v

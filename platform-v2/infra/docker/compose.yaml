@@ -1,0 +1,222 @@
+name: lotediretor-v2
+
+services:
+  postgres:
+    image: postgis/postgis:18-3.6
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lotediretor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-platform-db}
+      POSTGRES_DB: ${POSTGRES_DB:-lotediretor_platform}
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lotediretor} -d ${POSTGRES_DB:-lotediretor_platform}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [foundation]
+
+  valkey:
+    image: valkey/valkey:8.1-alpine
+    restart: unless-stopped
+    command: ["valkey-server", "--save", "60", "1", "--loglevel", "warning"]
+    ports:
+      - "127.0.0.1:56379:6379"
+    volumes:
+      - valkey-data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [foundation]
+
+  nats:
+    image: nats:2.11-alpine
+    restart: unless-stopped
+    command: ["-js", "-sd", "/data", "-m", "8222"]
+    ports:
+      - "127.0.0.1:54222:4222"
+      - "127.0.0.1:58222:8222"
+    volumes:
+      - nats-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8222/healthz >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [foundation]
+
+  minio:
+    image: quay.io/minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-lotediretor}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-minio-secret}
+    ports:
+      - "127.0.0.1:59000:9000"
+      - "127.0.0.1:59001:9001"
+    volumes:
+      - minio-data:/data
+    networks: [foundation]
+
+  minio-init:
+    image: quay.io/minio/mc@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
+    profiles: ["bootstrap"]
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-lotediretor}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-minio-secret}
+    volumes:
+      - ./init-minio.sh:/scripts/init-minio.sh:ro
+    entrypoint: ["/bin/sh", "/scripts/init-minio.sh"]
+    networks: [foundation]
+
+  migrate-platform:
+    image: postgis/postgis:18-3.6
+    profiles: ["migrate"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:-change-me-platform-db}
+    volumes:
+      - ../../db/platform/migrations:/migrations:ro
+      - ../../db/seeds:/seeds:ro
+      - ./migrate-platform.sh:/scripts/migrate-platform.sh:ro
+    entrypoint: ["/bin/sh", "/scripts/migrate-platform.sh"]
+    networks: [foundation]
+
+  martin:
+    image: ghcr.io/maplibre/martin@sha256:59902019bf9038926ff0c71174237d6852e64c457830a6349abe7090be8818ca
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command:
+      - "--listen-addresses=0.0.0.0:3000"
+      - "--auto-bounds=quick"
+      - "postgres://${POSTGRES_USER:-lotediretor}:${POSTGRES_PASSWORD:-change-me-platform-db}@postgres:5432/${POSTGRES_DB:-lotediretor_platform}"
+    ports:
+      - "127.0.0.1:53000:3000"
+    networks: [foundation]
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4.7
+    profiles: ["identity"]
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["start-dev", "--http-port=8080", "--health-enabled=true"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: ${POSTGRES_USER:-lotediretor}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-change-me-platform-db}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-change-me-keycloak-admin}
+      JAVA_OPTS_APPEND: -Xms256m -Xmx768m
+    ports:
+      - "127.0.0.1:58080:8080"
+      - "127.0.0.1:58081:9000"
+    networks: [foundation]
+
+  opensearch:
+    image: opensearchproject/opensearch:3.2.0
+    profiles: ["search"]
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      DISABLE_SECURITY_PLUGIN: "true"
+      OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "127.0.0.1:59200:9200"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    networks: [foundation]
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.139.0
+    profiles: ["observability"]
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ../observability/otel/collector.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "127.0.0.1:54317:4317"
+      - "127.0.0.1:54318:4318"
+      - "127.0.0.1:58889:8889"
+    networks: [foundation]
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    profiles: ["observability"]
+    restart: unless-stopped
+    volumes:
+      - ../observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:59090:9090"
+    networks: [foundation]
+
+  loki:
+    image: grafana/loki:3.5.3
+    profiles: ["observability"]
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    volumes:
+      - ../observability/loki/loki.yaml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    ports:
+      - "127.0.0.1:53100:3100"
+    networks: [foundation]
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    profiles: ["observability"]
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-change-me-grafana-admin}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ../observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "127.0.0.1:53001:3000"
+    networks: [foundation]
+
+  caddy:
+    image: caddy:2.10.2-alpine
+    profiles: ["edge"]
+    restart: unless-stopped
+    volumes:
+      - ../caddy/Caddyfile.dev:/etc/caddy/Caddyfile:ro
+    ports:
+      - "127.0.0.1:58088:8088"
+    networks: [foundation]
+
+networks:
+  foundation:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  valkey-data:
+  nats-data:
+  minio-data:
+  opensearch-data:
+  prometheus-data:
+  loki-data:
+  grafana-data:
