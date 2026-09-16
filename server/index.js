@@ -613,7 +613,8 @@ module.exports = function (app) {
       });
       feature.properties.parametrosUrbanisticos = urbanParameters;
       feature.properties.usosUrbanisticos = buildLandUseAnalysis(
-        urbanParameters.zones.map((zone) => zone.zoneCode)
+        urbanParameters.zones.map((zone) => zone.zoneCode),
+        { lotArea: Number(feature.properties.qt_area_terreno) }
       );
 
       res.set('Content-Type', 'application/geo+json; charset=utf-8');
