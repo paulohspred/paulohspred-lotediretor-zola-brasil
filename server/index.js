@@ -5,6 +5,7 @@ const { querySiszon } = require('./sp-siszon');
 const { queryTpcl } = require('./sp-tpcl');
 const { queryAnnualIptu } = require('./sp-iptu-annual');
 const { buildLandUseAnalysis } = require('./sp-land-use');
+const { queryItbiHistory } = require('./sp-itbi-history');
 
 const GEOSAMPA_WFS =
   'https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/ows';
@@ -606,6 +607,10 @@ module.exports = function (app) {
       feature.properties.siszon = siszon;
       feature.properties.tpcl = tpcl;
       feature.properties.iptuAnual = queryAnnualIptu(feature.properties, tpcl);
+      feature.properties.itbiHistorico = queryItbiHistory(
+        feature.properties,
+        tpcl
+      );
       const urbanParameters = buildUrbanParameters({
         lotArea: Number(feature.properties.qt_area_terreno),
         territorial,

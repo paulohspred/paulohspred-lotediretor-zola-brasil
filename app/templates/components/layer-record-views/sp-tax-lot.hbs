@@ -278,6 +278,116 @@
   </section>
 {{/if}}
 
+
+{{#if @model.itbiHistorico.available}}
+  <hr class="hide-for-print" />
+  <section class="itbi-history">
+    <h3 class="header-small lot-section-header">
+      Histórico de transações e referências registrais — ITBI
+    </h3>
+    <p class="text-small dark-gray">
+      DTIs com ITBI-IV efetivamente recolhido, pesquisadas pelo SQL do imóvel no período
+      {{@model.itbiHistorico.coverage}}.
+    </p>
+
+    {{#if @model.itbiHistorico.count}}
+      <p class="text-small">
+        <strong>{{@model.itbiHistorico.count}}</strong>
+        transação(ões) encontrada(s) para este SQL.
+      </p>
+
+      {{#each @model.itbiHistorico.transactions as |transaction|}}
+        <details style="margin-bottom: 0.75rem;">
+          <summary class="text-small">
+            {{transaction.dataTransacao}}
+            {{#if transaction.naturezaTransacao}}
+              — {{transaction.naturezaTransacao}}
+            {{/if}}
+          </summary>
+
+          <div style="border-left: 3px solid #ae561f; padding-left: 0.75rem; margin-top: 0.5rem;">
+            {{#if transaction.valorTransacao}}
+              <div class="data-grid">
+                <label class="data-label">Valor declarado da transação</label>
+                <span class="datum">R$ {{numeral-format transaction.valorTransacao "0,0.00"}}</span>
+              </div>
+            {{/if}}
+            {{#if transaction.valorVenalReferencia}}
+              <div class="data-grid">
+                <label class="data-label">Valor Venal de Referência</label>
+                <span class="datum">R$ {{numeral-format transaction.valorVenalReferencia "0,0.00"}}</span>
+              </div>
+            {{/if}}
+            {{#if transaction.proporcaoTransmitida}}
+              <div class="data-grid">
+                <label class="data-label">Proporção transmitida</label>
+                <span class="datum">{{numeral-format transaction.proporcaoTransmitida "0,0.[00]"}}%</span>
+              </div>
+            {{/if}}
+            {{#if transaction.baseCalculo}}
+              <div class="data-grid">
+                <label class="data-label">Base de cálculo adotada</label>
+                <span class="datum">R$ {{numeral-format transaction.baseCalculo "0,0.00"}}</span>
+              </div>
+            {{/if}}
+            {{#if transaction.tipoFinanciamento}}
+              <div class="data-grid">
+                <label class="data-label">Financiamento</label>
+                <span class="datum">{{transaction.tipoFinanciamento}}</span>
+              </div>
+            {{/if}}
+            {{#if transaction.valorFinanciado}}
+              <div class="data-grid">
+                <label class="data-label">Valor financiado</label>
+                <span class="datum">R$ {{numeral-format transaction.valorFinanciado "0,0.00"}}</span>
+              </div>
+            {{/if}}
+            {{#if transaction.cartorioRegistro}}
+              <div class="data-grid">
+                <label class="data-label">Cartório de Registro informado</label>
+                <span class="datum">{{transaction.cartorioRegistro}}</span>
+              </div>
+            {{/if}}
+            {{#if transaction.matricula}}
+              <div class="data-grid">
+                <label class="data-label">Matrícula informada na DTI</label>
+                <span class="datum"><strong>{{transaction.matricula}}</strong></span>
+              </div>
+            {{/if}}
+            {{#if transaction.situacaoSql}}
+              <div class="data-grid">
+                <label class="data-label">Situação do SQL na DTI</label>
+                <span class="datum">{{transaction.situacaoSql}}</span>
+              </div>
+            {{/if}}
+            <p class="text-small medium-gray" style="margin-top: 0.35rem; margin-bottom: 0;">
+              Arquivo anual de pagamento: {{transaction.anoArquivo}}.
+            </p>
+          </div>
+        </details>
+      {{/each}}
+    {{else}}
+      <p class="text-small medium-gray">
+        Nenhuma DTI com ITBI-IV recolhido foi localizada para este SQL no período
+        {{@model.itbiHistorico.coverage}}.
+      </p>
+    {{/if}}
+
+    <p class="text-small medium-gray" style="margin-bottom: 0.25rem;">
+      {{@model.itbiHistorico.note}}
+    </p>
+    <p class="text-small">
+      <a href={{@model.itbiHistorico.sourcePage}} target="_blank" rel="noopener noreferrer">
+        Abrir base oficial de transações ITBI
+      </a>
+      <span class="pipe">|</span>
+      <a href="https://registradores.onr.org.br/" target="_blank" rel="noopener noreferrer">
+        Confirmar matrícula / titularidade no RI Digital
+      </a>
+    </p>
+  </section>
+{{/if}}
+
 {{#if @model.parametrosUrbanisticos}}
   <hr class="hide-for-print" />
   <section class="urban-parameters">
