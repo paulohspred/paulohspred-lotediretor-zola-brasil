@@ -93,6 +93,83 @@
   {{/if}}
 </section>
 
+{{#if @model.enquadramentoTerritorial}}
+  <hr class="hide-for-print" />
+  <section class="territorial-analysis">
+    <h3 class="header-small lot-section-header">
+      Enquadramento territorial
+    </h3>
+    <p class="text-small dark-gray">
+      Interseções espaciais identificadas nas camadas oficiais do GeoSampa.
+      Este bloco confirma incidência geográfica; a interpretação jurídica e os
+      parâmetros construtivos serão resolvidos separadamente pelo motor legal.
+    </p>
+
+    {{#each @model.enquadramentoTerritorial.sections as |section|}}
+      <div style="margin-bottom: 1.25rem;">
+        <h6 style="margin-bottom: 0.35rem;">{{section.label}}</h6>
+        {{#each section.matches as |match|}}
+          <div style="border-left: 3px solid #ae561f; padding-left: 0.75rem; margin-bottom: 0.75rem;">
+            <strong>{{match.title}}</strong>
+            {{#each match.details as |detail|}}
+              <div class="data-grid">
+                <label class="data-label">{{detail.label}}</label>
+                <span class="datum">
+                  {{#if detail.url}}
+                    <a href={{detail.url}} target="_blank" rel="noopener noreferrer">
+                      Abrir documento oficial
+                    </a>
+                  {{else}}
+                    {{detail.value}}
+                  {{/if}}
+                </span>
+              </div>
+            {{/each}}
+          </div>
+        {{/each}}
+        <p class="text-small medium-gray" style="margin-bottom: 0;">
+          {{section.statusLabel}} · Dataset: {{section.dataset}}
+        </p>
+      </div>
+    {{/each}}
+
+    {{#if @model.enquadramentoTerritorial.noIncidence.length}}
+      <details style="margin-bottom: 0.75rem;">
+        <summary class="text-small">
+          Camadas consultadas sem incidência identificada
+          ({{@model.enquadramentoTerritorial.noIncidence.length}})
+        </summary>
+        <ul class="text-small">
+          {{#each @model.enquadramentoTerritorial.noIncidence as |label|}}
+            <li>{{label}}</li>
+          {{/each}}
+        </ul>
+      </details>
+    {{/if}}
+
+    {{#if @model.enquadramentoTerritorial.unavailable.length}}
+      <details style="margin-bottom: 0.75rem;">
+        <summary class="text-small">
+          Camadas indisponíveis na consulta
+          ({{@model.enquadramentoTerritorial.unavailable.length}})
+        </summary>
+        <ul class="text-small">
+          {{#each @model.enquadramentoTerritorial.unavailable as |label|}}
+            <li>{{label}}</li>
+          {{/each}}
+        </ul>
+      </details>
+    {{/if}}
+
+    <p class="text-small medium-gray">
+      Fonte: {{@model.enquadramentoTerritorial.source}} ·
+      Método: {{@model.enquadramentoTerritorial.method}} ·
+      CRS de análise: {{@model.enquadramentoTerritorial.analysisCrs}} ·
+      Consulta: {{@model.enquadramentoTerritorial.generatedAt}}
+    </p>
+  </section>
+{{/if}}
+
 <hr class="hide-for-print" />
 <p class="text-small dark-gray">
   Fonte cadastral: GeoSampa — Prefeitura de São Paulo.
