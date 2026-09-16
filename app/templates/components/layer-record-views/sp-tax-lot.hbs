@@ -93,6 +93,207 @@
   {{/if}}
 </section>
 
+{{#if @model.parametrosUrbanisticos}}
+  <hr class="hide-for-print" />
+  <section class="urban-parameters">
+    <h3 class="header-small lot-section-header">
+      Parâmetros urbanísticos — LPUOS
+    </h3>
+    <p class="text-small dark-gray">
+      {{@model.parametrosUrbanisticos.statusLabel}} baseada no Quadro 3 da LPUOS.
+      Os valores abaixo são parâmetros-base e devem ser lidos com as condicionantes
+      territoriais e legais identificadas para o imóvel.
+    </p>
+
+    {{#if @model.parametrosUrbanisticos.warnings.length}}
+      <div style="border-left: 3px solid #d89a2b; padding-left: 0.75rem; margin-bottom: 1rem;">
+        {{#each @model.parametrosUrbanisticos.warnings as |warning|}}
+          <p class="text-small" style="margin-bottom: 0.4rem;">{{warning}}</p>
+        {{/each}}
+      </div>
+    {{/if}}
+
+    {{#each @model.parametrosUrbanisticos.zones as |zone|}}
+      <div style="margin-bottom: 1.25rem;">
+        <h5 style="margin-bottom: 0.5rem;">Zona {{zone.zoneCode}}</h5>
+        <p class="text-small medium-gray">{{zone.statusLabel}}</p>
+
+        {{#if zone.caMin}}
+          <div class="data-grid">
+            <label class="data-label">CA mínimo</label>
+            <span class="datum">{{zone.caMin}}</span>
+          </div>
+        {{/if}}
+        {{#if zone.caBasic}}
+          <div class="data-grid">
+            <label class="data-label">CA básico</label>
+            <span class="datum">{{zone.caBasic}}</span>
+          </div>
+        {{/if}}
+        {{#if zone.caMax}}
+          <div class="data-grid">
+            <label class="data-label">CA máximo-base</label>
+            <span class="datum">{{zone.caMax}}</span>
+          </div>
+        {{/if}}
+        {{#if zone.toMax}}
+          <div class="data-grid">
+            <label class="data-label">Taxa de ocupação máxima</label>
+            <span class="datum">{{zone.toMax}} · {{zone.toBand}}</span>
+          </div>
+        {{/if}}
+        {{#if zone.heightMax}}
+          <div class="data-grid">
+            <label class="data-label">Gabarito-base</label>
+            <span class="datum">{{zone.heightMax}} m</span>
+          </div>
+        {{/if}}
+        {{#if zone.frontSetback}}
+          <div class="data-grid">
+            <label class="data-label">Recuo frontal-base</label>
+            <span class="datum">{{zone.frontSetback}} m</span>
+          </div>
+        {{/if}}
+        {{#if zone.sideRearUpTo10}}
+          <div class="data-grid">
+            <label class="data-label">Laterais/fundos até 10 m de altura</label>
+            <span class="datum">{{zone.sideRearUpTo10}} m</span>
+          </div>
+        {{/if}}
+        {{#if zone.sideRearAbove10}}
+          <div class="data-grid">
+            <label class="data-label">Laterais/fundos acima de 10 m</label>
+            <span class="datum">{{zone.sideRearAbove10}} m</span>
+          </div>
+        {{/if}}
+        {{#if zone.cotaParteMax}}
+          <div class="data-grid">
+            <label class="data-label">Cota-parte máxima</label>
+            <span class="datum">{{zone.cotaParteMax}} m²/unidade</span>
+          </div>
+        {{/if}}
+        {{#if zone.tpMin}}
+          <div class="data-grid">
+            <label class="data-label">Taxa de permeabilidade mínima</label>
+            <span class="datum">{{zone.tpMin}}</span>
+          </div>
+        {{else}}
+          <div class="data-grid">
+            <label class="data-label">Taxa de permeabilidade</label>
+            <span class="datum">Pendente de resolver o Perímetro de Qualificação Ambiental</span>
+          </div>
+        {{/if}}
+
+        {{#if zone.parcelDimensions}}
+          <div style="margin-top: 0.65rem; margin-bottom: 0.5rem;">
+            <strong class="text-small">Parcelamento — Quadro 2A</strong>
+          </div>
+          {{#if zone.parcelDimensions.minFrontage}}
+            <div class="data-grid">
+              <label class="data-label">Frente mínima</label>
+              <span class="datum">{{zone.parcelDimensions.minFrontage}} m</span>
+            </div>
+          {{/if}}
+          {{#if zone.parcelDimensions.minLotArea}}
+            <div class="data-grid">
+              <label class="data-label">Área mínima de lote</label>
+              <span class="datum">{{numeral-format zone.parcelDimensions.minLotArea "0,0.[00]"}} m²</span>
+            </div>
+          {{/if}}
+          {{#if zone.parcelDimensions.maxFrontage}}
+            <div class="data-grid">
+              <label class="data-label">Frente máxima</label>
+              <span class="datum">{{zone.parcelDimensions.maxFrontage}} m</span>
+            </div>
+          {{/if}}
+          {{#if zone.parcelDimensions.maxLotArea}}
+            <div class="data-grid">
+              <label class="data-label">Área máxima de lote</label>
+              <span class="datum">{{numeral-format zone.parcelDimensions.maxLotArea "0,0.[00]"}} m²</span>
+            </div>
+          {{/if}}
+          <p class="text-small medium-gray" style="margin-top: 0.35rem;">
+            {{zone.parcelDimensions.areaRelationLabel}}.
+          </p>
+          <details style="margin-bottom: 0.5rem;">
+            <summary class="text-small">Notas de parcelamento</summary>
+            <ul class="text-small">
+              {{#each zone.parcelDimensions.notes as |parcelNote|}}
+                <li>{{parcelNote}}</li>
+              {{/each}}
+            </ul>
+          </details>
+        {{/if}}
+
+        {{#if zone.notes.length}}
+          <details style="margin-top: 0.5rem;">
+            <summary class="text-small">Condicionantes do Quadro 3</summary>
+            <ul class="text-small">
+              {{#each zone.notes as |note|}}
+                <li>{{note}}</li>
+              {{/each}}
+            </ul>
+          </details>
+        {{/if}}
+      </div>
+    {{/each}}
+
+    {{#if @model.parametrosUrbanisticos.potential}}
+      <div style="border-top: 1px solid #ddd; padding-top: 0.75rem; margin-top: 0.75rem;">
+        <h5>Potencial teórico pela área cadastral</h5>
+        {{#if @model.parametrosUrbanisticos.potential.basicComputableArea}}
+          <div class="data-grid">
+            <label class="data-label">Área computável pelo CA básico</label>
+            <span class="datum">{{numeral-format @model.parametrosUrbanisticos.potential.basicComputableArea "0,0.[00]"}} m²</span>
+          </div>
+        {{/if}}
+        {{#if @model.parametrosUrbanisticos.potential.maximumComputableArea}}
+          <div class="data-grid">
+            <label class="data-label">Área computável pelo CA máximo</label>
+            <span class="datum">{{numeral-format @model.parametrosUrbanisticos.potential.maximumComputableArea "0,0.[00]"}} m²</span>
+          </div>
+        {{/if}}
+        {{#if @model.parametrosUrbanisticos.potential.maximumFootprint}}
+          <div class="data-grid">
+            <label class="data-label">Projeção máxima pela TO</label>
+            <span class="datum">{{numeral-format @model.parametrosUrbanisticos.potential.maximumFootprint "0,0.[00]"}} m²</span>
+          </div>
+        {{/if}}
+        {{#if @model.parametrosUrbanisticos.potential.minimumPermeableArea}}
+          <div class="data-grid">
+            <label class="data-label">Área permeável mínima</label>
+            <span class="datum">{{numeral-format @model.parametrosUrbanisticos.potential.minimumPermeableArea "0,0.[00]"}} m²</span>
+          </div>
+        {{/if}}
+        <p class="text-small medium-gray">
+          {{@model.parametrosUrbanisticos.potential.disclaimer}}
+        </p>
+      </div>
+    {{/if}}
+
+    <p class="text-small medium-gray" style="margin-bottom: 0.25rem;">
+      Fonte legal: {{@model.parametrosUrbanisticos.source.law}}, com redação considerada
+      pela {{@model.parametrosUrbanisticos.source.amendment}}.
+    </p>
+    <p class="text-small" style="margin-bottom: 0.25rem;">
+      <a href={{@model.parametrosUrbanisticos.source.consolidatedUrl}} target="_blank" rel="noopener noreferrer">
+        Abrir texto consolidado da LPUOS
+      </a>
+      <span class="pipe">|</span>
+      <a href={{@model.parametrosUrbanisticos.source.tableUrl}} target="_blank" rel="noopener noreferrer">
+        Abrir Quadro 3 oficial
+      </a>
+      <span class="pipe">|</span>
+      <a href={{@model.parametrosUrbanisticos.source.parcelTableUrl}} target="_blank" rel="noopener noreferrer">
+        Abrir Quadro 2A oficial
+      </a>
+    </p>
+    <p class="text-small medium-gray">
+      Base jurídica revisada em {{@model.parametrosUrbanisticos.source.reviewedAt}}.
+    </p>
+  </section>
+{{/if}}
+
 {{#if @model.enquadramentoTerritorial}}
   <hr class="hide-for-print" />
   <section class="territorial-analysis">

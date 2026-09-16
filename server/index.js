@@ -1,5 +1,6 @@
 const fs = require('fs');
 const https = require('https');
+const { buildUrbanParameters } = require('./sp-lpuos-parameters');
 
 const GEOSAMPA_WFS =
   'https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/ows';
@@ -590,6 +591,10 @@ module.exports = function (app) {
       feature.properties.id = id;
       feature.properties.enquadramentoTerritorial =
         await buildTerritorialAnalysis(nativePayload.features[0].geometry, id);
+      feature.properties.parametrosUrbanisticos = buildUrbanParameters({
+        lotArea: Number(feature.properties.qt_area_terreno),
+        territorial: feature.properties.enquadramentoTerritorial,
+      });
 
       res.set('Content-Type', 'application/geo+json; charset=utf-8');
       res.set('Cache-Control', 'public, max-age=60');
