@@ -2,7 +2,9 @@ const LPUOS_SOURCE = {
   law: 'Lei Municipal 16.402/2016 — LPUOS',
   consolidatedUrl:
     'https://legislacao.prefeitura.sp.gov.br/lei-16402-de-22-de-marco-de-2016',
-  amendment: 'Lei Municipal 18.081/2024',
+  amendment: 'Leis Municipais 18.081/2024 e 18.177/2024',
+  law18177Url:
+    'https://legislacao.prefeitura.sp.gov.br/lei-18177-de-25-de-julho-de-2024',
   table: 'Quadro 3 — Parâmetros de ocupação, exceto Quota Ambiental',
   tableUrl:
     'https://legislacao.prefeitura.sp.gov.br/leis/lei-16402-de-22-de-marco-de-2016/anexo/698b65fbcff239b79bec6227/5-QUADRO_3_FINAL.docx',
@@ -43,7 +45,7 @@ const ZONE_PARAMETERS = {
   'ZDE-1': [0.5, 1, 2, 0.7, 0.7, 28, 5, null, 3, null],
   'ZDE-2': [0.5, 1, 2, 0.7, 0.5, 28, 5, 3, 3, null],
   'ZPI-1': [0.5, 1, 1.5, 0.7, 0.7, 28, 5, 3, 3, null],
-  'ZPI-2': [null, 1, 1.5, 0.5, 0.3, 28, 5, 3, 3, null],
+  'ZPI-2': [null, 1, 1.5, 0.5, 0.5, 28, 5, 3, 3, null],
   ZPR: [0.05, 1, 1, 0.5, 0.5, 10, 5, null, 3, null],
   'ZER-1': [0.05, 1, 1, 0.5, 0.5, 10, 5, null, 3, null],
   'ZER-2': [0.05, 1, 1, 0.5, 0.5, 10, 5, null, 3, null],
@@ -372,6 +374,15 @@ function buildUrbanParameters({ lotArea, territorial }) {
   if (zones.some((zone) => zone.tpStatus === 'REQUER_PERIMETRO_QA')) {
     warnings.push(
       'A Taxa de Permeabilidade/Quota Ambiental depende do Perímetro de Qualificação Ambiental (Quadro 3A). O PA ainda não foi resolvido automaticamente para este lote.'
+    );
+  }
+  if (
+    zones.some((zone) =>
+      ['ZEU', 'ZEUa', 'ZEUP', 'ZEUPa'].includes(zone.zoneCode)
+    )
+  ) {
+    warnings.push(
+      'A aplicação dos parâmetros de ZEU/ZEUP exige verificar as exceções do art. 3º da Lei 18.177/2024, incluindo vila ou rua sem saída, acesso veicular por via estreita, APP de nascente e risco hidrológico/geológico.'
     );
   }
 
