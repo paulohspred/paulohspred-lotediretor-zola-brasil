@@ -1,0 +1,45 @@
+name: Platform v2 API
+on:
+  push:
+    paths:
+      - 'platform-v2/services/platform-api/**'
+      - 'platform-v2/packages/contracts/**'
+      - 'platform-v2/infra/docker/**'
+      - 'platform-v2/infra/caddy/**'
+      - 'platform-v2/scripts/platform-api-smoke.sh'
+      - 'platform-v2/scripts/export-contracts.sh'
+      - 'platform-v2/package.json'
+      - 'platform-v2/pnpm-workspace.yaml'
+      - 'platform-v2/pnpm-lock.yaml'
+      - '.github/workflows/platform-v2-api.yml'
+  pull_request:
+    paths:
+      - 'platform-v2/services/platform-api/**'
+      - 'platform-v2/packages/contracts/**'
+      - 'platform-v2/infra/docker/**'
+      - 'platform-v2/infra/caddy/**'
+      - 'platform-v2/scripts/**'
+      - 'platform-v2/pnpm-lock.yaml'
+      - '.github/workflows/platform-v2-api.yml'
+
+jobs:
+  api-contract-and-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate compose
+        run: docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example --profile migrate --profile edge config >/dev/null
+      - name: Platform API smoke
+        run: sudo ./platform-v2/scripts/platform-api-smoke.sh
+      - name: Verify versioned contracts
+        run: |
+          sudo ./platform-v2/scripts/export-contracts.sh
+          sudo chown -R "$USER:$USER" platform-v2/packages/contracts
+          git diff --exit-code -- platform-v2/packages/contracts/openapi/platform-api.v1.json platform-v2/packages/contracts/graphql/platform-api.graphql
+      - name: Logs on failure
+        if: failure()
+        run: docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example logs --no-color
+      - name: Cleanup
+        if: always()
+        run: docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example --profile edge down -v

@@ -1,0 +1,26 @@
+type Query {
+  source(municipalityIbge: String, sourceCode: String!): SourceRegistryEntry
+  sources(municipalityIbge: String): [SourceRegistryEntry!]!
+}
+
+type SourceEndpoint {
+  method: String!
+  type: String!
+  url: String!
+}
+
+type SourceRegistryEntry {
+  accessClass: String!
+  authority: String!
+  cadence: String
+  datasetCode: String!
+  endpoints: [SourceEndpoint!]!
+  id: ID!
+  ingestionStatus: String!
+  lastCheckedAt: String
+  municipalityIbge: String
+  municipalityName: String
+  parserVersion: String
+  sourceCode: String!
+  sourceType: String!
+}

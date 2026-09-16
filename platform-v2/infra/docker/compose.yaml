@@ -107,6 +107,32 @@ services:
       - "127.0.0.1:53000:3000"
     networks: [foundation]
 
+
+  platform-api:
+    build:
+      context: ../..
+      dockerfile: services/platform-api/Dockerfile
+    image: lotediretor/platform-api:dev
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      HOST: 0.0.0.0
+      DATABASE_URL: postgres://${POSTGRES_USER:-lotediretor}:${POSTGRES_PASSWORD:-change-me-platform-db}@postgres:5432/${POSTGRES_DB:-lotediretor_platform}
+      DB_POOL_MAX: 10
+      DB_STATEMENT_TIMEOUT_MS: 10000
+    ports:
+      - "127.0.0.1:54000:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/v1/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [foundation]
+
   keycloak:
     image: quay.io/keycloak/keycloak:26.4.7
     profiles: ["identity"]

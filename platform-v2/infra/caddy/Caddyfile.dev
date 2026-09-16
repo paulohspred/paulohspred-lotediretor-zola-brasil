@@ -5,5 +5,20 @@
 
 :8088 {
   encode zstd gzip
-  respond /healthz 200
+
+  handle /healthz {
+    respond 200
+  }
+
+  handle /api/* {
+    reverse_proxy platform-api:3000
+  }
+
+  handle /graphql* {
+    reverse_proxy platform-api:3000
+  }
+
+  handle {
+    respond 404
+  }
 }
