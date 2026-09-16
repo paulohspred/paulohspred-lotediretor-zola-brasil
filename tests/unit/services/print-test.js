@@ -42,13 +42,13 @@ module('Unit | Service | print', function (hooks) {
     printSvc.set('enabled', true);
     assert.equal(
       printSvc.printViewClasses,
-      'paper letter portrait ',
+      'paper A4 portrait ',
       'printViewClasses default value is okay'
     );
     printSvc.set('printViewOrientation', 'landscape');
     assert.equal(
       printSvc.printViewClasses,
-      'paper letter landscape ',
+      'paper A4 landscape ',
       'printViewClasses observes changes to printViewOrientation'
     );
     printSvc.set('printViewPaperSize', 'tabloid');

@@ -1,0 +1,62 @@
+<div id="layers-menu" class="layer-palette hide-for-print" data-test-sp-layer-palette>
+  <div style="display:flex; align-items:center; justify-content:space-between; padding:0.75rem 0.75rem 0.35rem;">
+    <strong>Camadas de São Paulo</strong>
+    <button class="button gray tiny" type="button" {{on "click" this.reset}}>Padrão</button>
+  </div>
+  <p class="text-small medium-gray" style="padding:0 0.75rem; margin-bottom:0.5rem;">
+    Dados oficiais carregados conforme a área visível do mapa. Camadas ativas podem ser exportadas na viewport atual.
+  </p>
+  {{#if this.exportError}}
+    <p class="text-small alert" style="padding:0 0.75rem;">{{this.exportError}}</p>
+  {{/if}}
+  {{#each this.groups as |group|}}
+    <section style="border-top:1px solid #ddd; padding:0.55rem 0.75rem;" data-test-sp-layer-group={{group.id}}>
+      <h6 style="margin-bottom:0.35rem;">{{group.label}}</h6>
+      {{#if group.timeline}}
+        <select data-test-sp-imagery-timeline aria-label="Linha do tempo de aerofotos e ortofotos" {{on "change" this.selectImagery}}>
+          <option value="" selected={{eq this.selectedImageryLayer ""}}>Nenhum índice selecionado</option>
+          {{#each group.layers as |layer|}}
+            <option value={{layer.id}} selected={{eq this.selectedImageryLayer layer.id}}>{{layer.label}}</option>
+          {{/each}}
+        </select>
+        <p class="text-small medium-gray">{{group.note}}</p>
+        {{#each group.layers as |layer|}}
+          {{#if (array-includes layer.id @activeLayers)}}
+            <div style="display:flex; gap:0.35rem; align-items:center; margin-bottom:0.35rem;">
+              <span style={{sp-layer-swatch-style layer.color}}></span>
+              <small>{{layer.label}}</small>
+            </div>
+          {{/if}}
+        {{/each}}
+      {{else}}
+        <ul class="no-bullet" style="margin-bottom:0;">
+          {{#each group.layers as |layer|}}
+            <li style="margin-bottom:0.25rem;" data-test-sp-layer-row={{layer.id}}>
+              <div style="display:flex; align-items:flex-start; gap:0.35rem;">
+                <label style="display:flex; align-items:flex-start; gap:0.4rem; cursor:pointer; flex:1;">
+                  <input
+                    type="checkbox"
+                    data-test-sp-layer={{layer.id}}
+                    checked={{array-includes layer.id @activeLayers}}
+                    {{on "change" (fn this.toggle layer.id)}}
+                  />
+                  <span style={{sp-layer-swatch-style layer.color}}></span>
+                  <span>
+                    {{layer.label}}
+                    {{#if layer.minZoom}}<small class="medium-gray"> · zoom {{layer.minZoom}}+</small>{{/if}}
+                  </span>
+                </label>
+                {{#if (array-includes layer.id @activeLayers)}}
+                  <span class="nowrap">
+                    <button class="button clear tiny" type="button" title="Exportar GeoJSON da viewport" {{on "click" (fn this.exportLayer layer "geojson")}}>JSON</button>
+                    <button class="button clear tiny" type="button" title="Exportar CSV da viewport" {{on "click" (fn this.exportLayer layer "csv")}}>CSV</button>
+                  </span>
+                {{/if}}
+              </div>
+            </li>
+          {{/each}}
+        </ul>
+      {{/if}}
+    </section>
+  {{/each}}
+</div>

@@ -3,5 +3,6 @@
   @modelName="sp-lot" as |lot|
 >
   <Mapbox::MapFeatureRenderer @model={{lot}} />
+  <Bookmarks::BookmarkButton @bookmarkableModel={{lot}} />
   <LayerRecordViews::SpTaxLot @model={{lot.properties}} />
 </CartoDataProvider>

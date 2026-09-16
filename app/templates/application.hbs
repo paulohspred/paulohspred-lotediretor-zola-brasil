@@ -1,4 +1,3 @@
-<DefaultModal @openModal={{this.openModal}} @toggleModal={{this.toggleModal}} @dontShowModalAgain={{this.dontShowModalAgain}} />
 <MainHeader @bookmarks={{this.model.bookmarks}} @savedLayerSets={{this.model.savedLayerSets}} />
 <div class="{{if this.printSvc.enabled "print-view"}}">
   <LinkTo @route="index" class="index-active-detector sr-only">Homepage</LinkTo>
@@ -29,23 +28,16 @@
           @bookmarks={{this.model.bookmarks}}
           @layerGroups={{this.model.layerGroups}}
           @layerGroupsMeta={{this.model.meta}}
+          @spLayers={{this.spLayers}}
           @onPrint={{action (mut this.printSvc.enabled) true}}
         />
 
         {{#if this.leftSideMenuVisibilty}}
-          <LayerPalette
-            @selectedZoning={{this.selectedZoning}}
-            @selectedOverlays={{this.selectedOverlays}}
-            @selectedFirm={{this.selectedFirm}}
-            @selectedPfirm={{this.selectedPfirm}}
-            @selectedCouncilDistricts={{this.selectedCouncilDistricts}}
-            @layerGroups={{this.model.layerGroupsObject}}
-            @isDefault={{this.isDefault}}
-            @resetQueryParams={{action this.setModelsToDefault}}
-            @setAllLayerVisibilityToFalse={{action this.setAllLayerVisibilityToFalse}}
-            @undoSetAllLayerVisibilityToFalse={{action this.undoSetAllLayerVisibilityToFalse}}
-            @handleLayerGroupChange={{action this.handleLayerGroupChange}}
-            @showToggleLayersBackOn={{this.showToggleLayersBackOn}}
+          <SpLayerPalette
+            @activeLayers={{this.spLayers}}
+            @onToggle={{this.toggleSpLayer}}
+            @onReset={{this.resetSpLayers}}
+            @onSetImagery={{this.setSpImageryLayer}}
           />
         {{/if}}
       </div>

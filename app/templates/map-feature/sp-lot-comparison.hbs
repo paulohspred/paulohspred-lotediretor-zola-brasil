@@ -1,0 +1,35 @@
+<div class="content-area cell large-8 large-cell-block-y xxlarge-7">
+  {{#if (eq this.model.comparisonid "0")}}
+    <p class="callout secondary text-small">
+      Selecione outro lote no mapa para comparar lado a lado.
+    </p>
+  {{/if}}
+
+  <div class="grid-x grid-margin-x">
+    <div class="cell {{if (eq this.model.comparisonid "0") "large-12" "large-6"}}">
+      <CartoDataProvider @modelId={{this.model.id}} @modelName="sp-lot" as |lot|>
+        <Mapbox::MapFeatureRenderer @model={{lot}} />
+        <Bookmarks::BookmarkButton @bookmarkableModel={{lot}} />
+        <LayerRecordViews::SpTaxLot
+          @model={{lot.properties}}
+          @comparisonMode={{true}}
+          @otherModelId={{this.model.comparisonid}}
+        />
+      </CartoDataProvider>
+    </div>
+
+    {{#unless (eq this.model.comparisonid "0")}}
+      <div class="cell large-6">
+        <CartoDataProvider @modelId={{this.model.comparisonid}} @modelName="sp-lot" as |lot|>
+          <Mapbox::MapFeatureRenderer @model={{lot}} />
+          <Bookmarks::BookmarkButton @bookmarkableModel={{lot}} />
+          <LayerRecordViews::SpTaxLot
+            @model={{lot.properties}}
+            @comparisonMode={{true}}
+            @otherModelId={{this.model.id}}
+          />
+        </CartoDataProvider>
+      </div>
+    {{/unless}}
+  </div>
+</div>

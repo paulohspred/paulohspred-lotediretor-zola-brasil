@@ -37,24 +37,24 @@
     <div class="no-bookmarks">
       <div class="align-self-middle large-text-center">
         <h1 class="header-large">
-          You haven't bookmarked&nbsp;anything.
+          Você ainda não salvou nenhum imóvel ou conjunto de camadas.
         </h1>
         <p>
-          You can add bookmarks to this page by clicking the
+          Salve imóveis pelo ícone
           {{fa-icon icon="bookmark"}}
-          icon on other pages&mdash;like Tax Lots and Zoning Map Amendments.
+          durante a análise do lote.
         </p>
         <p>
-          From this page you can quickly navigate to all of your bookmarked&nbsp;information.
+          Nesta página você pode reabrir rapidamente imóveis e configurações salvas.
         </p>
         <p>
-          If you would like to bookmark the current selected set of layers, use the button below.
+          Você também pode salvar a configuração atual das camadas do mapa.
         </p>
         <a
           class="button gray tiny"
           onclick={{action 'bookmarkCurrentLayerSet'}}
         >
-          Bookmark Current Layers
+          Salvar camadas atuais
         </a>
       </div>
     </div>
@@ -62,17 +62,17 @@
 
 <div style="margin-top: 2rem">
   <h3>
-    Layer Sets
+    Conjuntos de camadas
     <a
       class="button gray tiny float-right"
       onclick={{action 'bookmarkCurrentLayerSet'}}
     >
-      Bookmark Current Layers
+      Salvar camadas atuais
     </a>
   </h3>
 
   {{#unless this.savedLayerSets.length}}
-    <p>No current saved layer sets.</p>
+    <p>Nenhum conjunto de camadas salvo.</p>
   {{/unless}}
   <ul class="no-bullet">
     {{#each this.savedLayerSets as |bookmark|}}

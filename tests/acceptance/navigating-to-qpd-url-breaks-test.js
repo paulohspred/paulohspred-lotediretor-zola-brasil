@@ -4,7 +4,8 @@ import { setupApplicationTest } from 'ember-qunit';
 import { setupMirage } from 'ember-cli-mirage/test-support';
 import layerGroupsFixtures from '../../mirage/static-fixtures/layer-groups';
 
-module('Acceptance | navigating to qpd url breaks', function (hooks) {
+// NYC upstream acceptance contract; superseded by São Paulo search/layers and sp-layers tests.
+module.skip('Acceptance | navigating to qpd url breaks', function (hooks) {
   setupApplicationTest(hooks);
   setupMirage(hooks);
 

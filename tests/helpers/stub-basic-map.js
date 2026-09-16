@@ -68,6 +68,10 @@ export const MAPBOX_GL_DEFAULTS = {
    * convenience properties for stub
    */
   features: [],
+  layers: {},
+  sources: {},
+  zoom: 9.5,
+  bounds: { west: -46.7, south: -23.6, east: -46.6, north: -23.5 },
   events: {
     // stores registered events
     // spread noop default events
@@ -105,9 +109,30 @@ export const MAPBOX_GL_DEFAULTS = {
   /**
    * plain mapbox-gl method stubs
    */
-  addLayer() {},
-  addSource() {},
-  getSource: () => MAPBOX_GL_SOURCE_STUB,
+  addLayer(layer) {
+    if (layer?.id) this.layers[layer.id] = layer;
+  },
+  addSource(id, source = {}) {
+    this.sources[id] = { ...MAPBOX_GL_SOURCE_STUB, ...source };
+  },
+  getLayer(id) {
+    return this.layers[id];
+  },
+  getSource(id) {
+    return this.sources[id] || MAPBOX_GL_SOURCE_STUB;
+  },
+  getZoom() {
+    return this.zoom;
+  },
+  getBounds() {
+    const { west, south, east, north } = this.bounds;
+    return {
+      getWest: () => west,
+      getSouth: () => south,
+      getEast: () => east,
+      getNorth: () => north,
+    };
+  },
   setLayoutProperty() {},
   setPaintProperty() {},
   setFilter() {},
@@ -115,8 +140,12 @@ export const MAPBOX_GL_DEFAULTS = {
   getCanvas: () => ({ style: {} }),
   addControl() {},
   removeControl() {},
-  removeLayer() {},
-  removeSource() {},
+  removeLayer(id) {
+    delete this.layers[id];
+  },
+  removeSource(id) {
+    delete this.sources[id];
+  },
   resize() {},
   off() {},
   fitBounds() {},
@@ -170,6 +199,16 @@ const createMapStub = function (testContext) {
 // TODO: extract out the stub registration so that it can be used in other contexts
 export default function (hooks) {
   hooks.beforeEach(async function () {
+    MAPBOX_GL_DEFAULTS.features = [];
+    MAPBOX_GL_DEFAULTS.layers = {};
+    MAPBOX_GL_DEFAULTS.sources = {};
+    MAPBOX_GL_DEFAULTS.zoom = 9.5;
+    MAPBOX_GL_DEFAULTS.bounds = {
+      west: -46.7,
+      south: -23.6,
+      east: -46.6,
+      north: -23.5,
+    };
     this.owner.register('component:mapbox/basic-map', createMapStub(this));
   });
 }

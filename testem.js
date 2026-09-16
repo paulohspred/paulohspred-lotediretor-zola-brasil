@@ -4,6 +4,9 @@ module.exports = {
   launch_in_ci: ['Chrome'],
   launch_in_dev: ['Chrome'],
   browser_start_timeout: 120,
+  browser_paths: process.env.CHROME_BIN
+    ? { Chrome: process.env.CHROME_BIN }
+    : {},
   browser_args: {
     Chrome: {
       ci: [

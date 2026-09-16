@@ -1,0 +1,18 @@
+<h3>Imóveis salvos — São Paulo</h3>
+<ul class="no-bullet">
+  {{#each this.items as |item|}}
+    <li class="list-item-bookmark">
+      <LinkTo @route="map-feature.sp-lot" @model={{item.bookmark.id}}>
+        <span class="icon tax-lot"></span>
+        {{item.bookmark.title}}
+        <span class="dark-gray">{{item.bookmark.subtitle}}</span>
+      </LinkTo>
+      <button class="float-right lu-red delete-bookmark-button" type="button" {{on "click" (fn this.deleteBookmark item)}}>&times;</button>
+    </li>
+  {{/each}}
+</ul>
+{{#if this.items.length}}
+  <p class="text-small dark-gray">Exportar imóveis salvos:</p>
+  <button class="button gray tiny" type="button" {{on "click" this.exportCsv}}>CSV</button>
+  <button class="button gray tiny" type="button" {{on "click" this.exportGeoJson}}>GeoJSON</button>
+{{/if}}

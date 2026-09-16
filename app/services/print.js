@@ -9,7 +9,7 @@ export default class PrintService extends Service {
   // Print View Settings
   printViewOrientation = 'portrait';
 
-  printViewPaperSize = 'letter';
+  printViewPaperSize = 'A4';
 
   printViewShowMap = true;
 

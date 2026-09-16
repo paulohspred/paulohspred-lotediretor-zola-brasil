@@ -10,6 +10,7 @@ import bblDemux from '../utils/bbl-demux';
 import drawnFeatureLayers from '../layers/drawn-feature';
 import selectedLayers from '../layers/selected-lot';
 import comparisonSelectedLayers from '../layers/comparison-selected-lot';
+import { SP_MAP_LAYERS } from '../utils/sp-map-layers';
 
 const selectedFillLayer = selectedLayers.fill;
 const selectedLineLayer = selectedLayers.line;
@@ -28,6 +29,15 @@ const EMPTY_FEATURE_COLLECTION = {
 function clearGeoSampaLots(map) {
   const source = map.getSource(GEOSAMPA_LOTS_SOURCE_ID);
   if (source) source.setData(EMPTY_FEATURE_COLLECTION);
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 // Custom Control
@@ -74,6 +84,8 @@ export default class MainMap extends Component {
   geoSampaLotsAbortController = null;
 
   geoSampaLotsRequestId = 0;
+
+  spLayerControllers = new Map();
 
   windowResize() {
     return new Promise((resolve) => {
@@ -194,11 +206,243 @@ export default class MainMap extends Component {
 
   comparisonSelectedLineLayer = comparisonSelectedLineLayer;
 
+  didUpdateAttrs() {
+    super.didUpdateAttrs();
+    if (this.mainMap.mapInstance) {
+      this.loadGeoSampaLots(this.mainMap.mapInstance);
+      this.loadSpMapLayers(this.mainMap.mapInstance);
+    }
+  }
+
+  attachSpLayerInteraction(map, layer, renderLayerId) {
+    const marker = `__lotediretor_handler_${renderLayerId}`;
+    if (map[marker]) return;
+    map[marker] = true;
+    const popup = new mapboxgl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+    });
+    const showTooltip = (event) => {
+      const feature = event.features?.[0];
+      if (!feature) return;
+      const properties = feature.properties || {};
+      const title = properties.__title || layer.label;
+      const subtitle = properties.__subtitle || properties.__layer_label || '';
+      popup
+        .setLngLat(event.lngLat)
+        .setHTML(
+          `<strong>${escapeHtml(title)}</strong>${
+            subtitle ? `<br><small>${escapeHtml(subtitle)}</small>` : ''
+          }`
+        )
+        .addTo(map);
+    };
+    map.on('mouseenter', renderLayerId, (event) => {
+      map.getCanvas().style.cursor = 'pointer';
+      showTooltip(event);
+    });
+    map.on('mousemove', renderLayerId, showTooltip);
+    map.on('mouseleave', renderLayerId, () => {
+      map.getCanvas().style.cursor = '';
+      popup.remove();
+    });
+    map.on('click', renderLayerId, (event) => {
+      const feature = event.features?.[0];
+      const featureId = feature?.properties?.__feature_id;
+      if (featureId) {
+        this.router.transitionTo(
+          'map-feature.sp-map-feature',
+          layer.id,
+          String(featureId)
+        );
+      }
+    });
+  }
+
+  ensureSpMapLayer(map, layer) {
+    const sourceId = `sp-${layer.id}`;
+    const color = layer.color || '#5f3b73';
+    if (!map.getSource(sourceId)) {
+      if (layer.kind === 'raster-wms') {
+        const wmsUrl =
+          `https://raster.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/wms` +
+          `?service=WMS&version=1.1.1&request=GetMap&layers=${encodeURIComponent(
+            layer.wmsLayer
+          )}&styles=&format=image/png&transparent=true&srs=EPSG:3857` +
+          `&bbox={bbox-epsg-3857}&width=256&height=256`;
+        map.addSource(sourceId, {
+          type: 'raster',
+          tiles: [wmsUrl],
+          tileSize: 256,
+          attribution: 'GeoSampa — Prefeitura de São Paulo',
+        });
+        map.addLayer(
+          {
+            id: `${sourceId}-raster`,
+            type: 'raster',
+            source: sourceId,
+            minzoom: layer.minZoom,
+            paint: { 'raster-opacity': 0.88, 'raster-fade-duration': 0 },
+          },
+          map.getLayer('geosampa-lotes-fill')
+            ? 'geosampa-lotes-fill'
+            : undefined
+        );
+      } else {
+        map.addSource(sourceId, {
+          type: 'geojson',
+          data: EMPTY_FEATURE_COLLECTION,
+        });
+      }
+      if (layer.kind === 'fill-extrusion') {
+        map.addLayer({
+          id: `${sourceId}-extrusion`,
+          type: 'fill-extrusion',
+          source: sourceId,
+          minzoom: layer.minZoom,
+          paint: {
+            'fill-extrusion-color': color,
+            'fill-extrusion-height': [
+              'coalesce',
+              ['get', 'qt_altura_edificacao'],
+              3,
+            ],
+            'fill-extrusion-base': 0,
+            'fill-extrusion-opacity': layer.opacity || 0.72,
+          },
+        });
+      } else if (layer.kind === 'fill') {
+        map.addLayer({
+          id: `${sourceId}-fill`,
+          type: 'fill',
+          source: sourceId,
+          minzoom: layer.minZoom,
+          paint: {
+            'fill-color': color,
+            'fill-opacity': layer.opacity === undefined ? 0.18 : layer.opacity,
+          },
+        });
+        map.addLayer({
+          id: `${sourceId}-line`,
+          type: 'line',
+          source: sourceId,
+          minzoom: layer.minZoom,
+          paint: {
+            'line-color': color,
+            'line-width': layer.opacity && layer.opacity < 0.08 ? 1.5 : 1.2,
+            'line-opacity': 0.9,
+          },
+        });
+      } else if (layer.kind === 'line') {
+        map.addLayer({
+          id: `${sourceId}-line`,
+          type: 'line',
+          source: sourceId,
+          minzoom: layer.minZoom,
+          paint: {
+            'line-color': color,
+            'line-width': 2.2,
+            'line-opacity': 0.85,
+          },
+        });
+      } else if (layer.kind === 'point') {
+        map.addLayer({
+          id: `${sourceId}-point`,
+          type: 'circle',
+          source: sourceId,
+          minzoom: layer.minZoom,
+          paint: {
+            'circle-radius': 5,
+            'circle-color': color,
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-width': 1,
+          },
+        });
+      }
+    }
+    if (layer.kind !== 'raster-wms') {
+      let interactiveSuffix = 'point';
+      if (layer.kind === 'fill') interactiveSuffix = 'fill';
+      if (layer.kind === 'line') interactiveSuffix = 'line';
+      if (layer.kind === 'fill-extrusion') interactiveSuffix = 'extrusion';
+      this.attachSpLayerInteraction(
+        map,
+        layer,
+        `${sourceId}-${interactiveSuffix}`
+      );
+    }
+    return sourceId;
+  }
+
+  async loadSpMapLayers(map) {
+    const active = Array.isArray(this.spLayers) ? this.spLayers : [];
+    const bounds = map.getBounds();
+    const bbox = [
+      bounds.getWest(),
+      bounds.getSouth(),
+      bounds.getEast(),
+      bounds.getNorth(),
+    ];
+    const spanOk = bbox[2] - bbox[0] <= 0.08 && bbox[3] - bbox[1] <= 0.08;
+
+    SP_MAP_LAYERS.forEach((layer) => {
+      const sourceId = this.ensureSpMapLayer(map, layer);
+      const visible =
+        active.includes(layer.id) && map.getZoom() >= layer.minZoom && spanOk;
+      ['fill', 'line', 'point', 'extrusion', 'raster'].forEach((suffix) => {
+        const id = `${sourceId}-${suffix}`;
+        if (map.getLayer(id))
+          map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
+      });
+      if (!visible) {
+        const controller = this.spLayerControllers.get(layer.id);
+        if (controller) controller.abort();
+        return;
+      }
+      if (layer.kind === 'raster-wms') return;
+      const previous = this.spLayerControllers.get(layer.id);
+      if (previous) previous.abort();
+      const controller = new AbortController();
+      this.spLayerControllers.set(layer.id, controller);
+      fetch(
+        `/api/geosampa/camadas/${layer.id}?bbox=${encodeURIComponent(
+          bbox.join(',')
+        )}`,
+        { signal: controller.signal }
+      )
+        .then((response) =>
+          response.ok
+            ? response.json()
+            : Promise.reject(new Error(`HTTP ${response.status}`))
+        )
+        .then((data) => {
+          const source = map.getSource(sourceId);
+          if (source) source.setData(data);
+        })
+        .catch((error) => {
+          if (error.name !== 'AbortError')
+            console.error(`Falha ao carregar camada ${layer.id}`, error);
+        });
+    });
+  }
+
   async loadGeoSampaLots(map) {
     const source = map.getSource(GEOSAMPA_LOTS_SOURCE_ID);
     if (!source) return;
 
-    if (map.getZoom() < GEOSAMPA_LOTS_MIN_ZOOM) {
+    const activeLayers = Array.isArray(this.spLayers) ? this.spLayers : [];
+    const lotsVisible = activeLayers.includes('lotes');
+    ['geosampa-lotes-fill', 'geosampa-lotes-line'].forEach((layerId) => {
+      if (map.getLayer(layerId)) {
+        map.setLayoutProperty(
+          layerId,
+          'visibility',
+          lotsVisible ? 'visible' : 'none'
+        );
+      }
+    });
+
+    if (!lotsVisible || map.getZoom() < GEOSAMPA_LOTS_MIN_ZOOM) {
       if (this.geoSampaLotsAbortController) {
         this.geoSampaLotsAbortController.abort();
         this.geoSampaLotsAbortController = null;
@@ -275,7 +519,7 @@ export default class MainMap extends Component {
 
     map.addControl(navigationControl, 'top-left');
     map.addControl(
-      new mapboxgl.ScaleControl({ unit: 'imperial' }),
+      new mapboxgl.ScaleControl({ unit: 'metric' }),
       'bottom-left'
     );
     map.addControl(geoLocateControl, 'top-left');
@@ -312,13 +556,43 @@ export default class MainMap extends Component {
     }
 
     this.loadGeoSampaLots(map);
-    map.on('moveend', () => this.loadGeoSampaLots(map));
-
-    map.on('mouseenter', 'geosampa-lotes-fill', () => {
-      map.getCanvas().style.cursor = 'pointer';
+    this.loadSpMapLayers(map);
+    map.on('moveend', () => {
+      this.loadGeoSampaLots(map);
+      this.loadSpMapLayers(map);
     });
+
+    const lotPopup = new mapboxgl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+    });
+    const showLotTooltip = (event) => {
+      const feature = event.features?.[0];
+      if (!feature) return;
+      const props = feature.properties || {};
+      const address = [props.nm_logradouro_completo, props.cd_numero_porta]
+        .filter(Boolean)
+        .join(', ');
+      const sql = [props.cd_setor_fiscal, props.cd_quadra_fiscal, props.cd_lote]
+        .filter(Boolean)
+        .join('.');
+      lotPopup
+        .setLngLat(event.lngLat)
+        .setHTML(
+          `<strong>${escapeHtml(address || 'Lote fiscal')}</strong>${
+            sql ? `<br><small>SQL ${escapeHtml(sql)}</small>` : ''
+          }`
+        )
+        .addTo(map);
+    };
+    map.on('mouseenter', 'geosampa-lotes-fill', (event) => {
+      map.getCanvas().style.cursor = 'pointer';
+      showLotTooltip(event);
+    });
+    map.on('mousemove', 'geosampa-lotes-fill', showLotTooltip);
     map.on('mouseleave', 'geosampa-lotes-fill', () => {
       map.getCanvas().style.cursor = '';
+      lotPopup.remove();
     });
     map.on('click', 'geosampa-lotes-fill', (event) => {
       const [feature] = event.features || [];
@@ -327,7 +601,19 @@ export default class MainMap extends Component {
           ? feature.properties.cd_identificador
           : null;
       if (lotId) {
-        this.router.transitionTo('map-feature.sp-lot', String(lotId));
+        const lotIdString = String(lotId);
+        if (this.router.currentRoute.name === 'map-feature.sp-lot-comparison') {
+          const primaryId = String(this.router.currentRoute.params.id);
+          if (lotIdString !== primaryId) {
+            this.router.transitionTo(
+              'map-feature.sp-lot-comparison',
+              primaryId,
+              lotIdString
+            );
+          }
+        } else {
+          this.router.transitionTo('map-feature.sp-lot', lotIdString);
+        }
       }
     });
 

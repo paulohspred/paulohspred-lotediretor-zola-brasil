@@ -4,7 +4,8 @@ import { setupApplicationTest } from 'ember-qunit';
 import { setupMirage } from 'ember-cli-mirage/test-support';
 import layerGroupsFixtures from '../../mirage/static-fixtures/layer-groups';
 
-module('Acceptance | visual diff routes', function (hooks) {
+// NYC upstream contract; superseded by São Paulo-specific tests.
+module.skip('Acceptance | visual diff routes', function (hooks) {
   setupApplicationTest(hooks);
   setupMirage(hooks);
 

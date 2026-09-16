@@ -13,6 +13,9 @@ function routes() {
   this.passthrough(
     'https://labs-mapbox-gl-noop-tiles.nyc3.digitaloceanspaces.com/**'
   );
+  this.passthrough('https://server.arcgisonline.com/**');
+  this.passthrough('https://maps.nyc.gov/**');
+  this.passthrough('https://raster.geosampa.prefeitura.sp.gov.br/**');
 
   this.get(
     'https://carto.nycplanningdigital.com/api/v2/sql',
@@ -20,16 +23,16 @@ function routes() {
       const { queryParams } = request;
       const { format, q } = queryParams;
 
-    // by default, this will return a feature that looks like a PLUTO Lot
-    if (format === 'geojson') {
-      // by default, return anything created in this schema
-      let schemaModel = schema.cartoGeojsonFeatures.all();
-      // if it includes mappluto, it's asking for lots
-      if (q.includes('dcp_mappluto')) {
-        schemaModel = schema.lots.all();
-      }
+      // by default, this will return a feature that looks like a PLUTO Lot
+      if (format === 'geojson') {
+        // by default, return anything created in this schema
+        let schemaModel = schema.cartoGeojsonFeatures.all();
+        // if it includes mappluto, it's asking for lots
+        if (q.includes('dcp_mappluto')) {
+          schemaModel = schema.lots.all();
+        }
 
-      let { models: features } = schemaModel;
+        let { models: features } = schemaModel;
 
         // NOTE: some tests will load the Mirage mock server with multiple fake carto responses. This leads
         // to multiple records being included with the response, something that should never happen in

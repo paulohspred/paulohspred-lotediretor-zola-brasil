@@ -359,22 +359,30 @@ export default class TaxLotRecordComponent extends LayerRecordComponent {
 
   get cdName() {
     const borocd = this.model.cd;
+    if (!borocd) return '';
     const cdborocode = `${borocd}`.substring(0, 1);
+    const borough = boroLookup[cdborocode];
+    if (!borough) return '';
     const cd = parseInt(`${borocd}`.substring(1, 3), 10).toString();
-    return `${boroLookup[cdborocode]} Community District ${cd}`;
+    return `${borough} Community District ${cd}`;
   }
 
   get boroSlashCd() {
     const borocd = this.model.cd;
+    if (!borocd) return '';
     const cdborocode = `${borocd}`.substring(0, 1);
+    const borough = boroLookup[cdborocode];
+    if (!borough) return '';
     const cd = parseInt(`${borocd}`.substring(1, 3), 10).toString();
-    return `${boroLookup[cdborocode].replace(' ', '-').toLowerCase()}/${cd}`;
+    return `${borough.replace(' ', '-').toLowerCase()}/${cd}`;
   }
 
   get cdURLSegment() {
     const borocd = this.model.cd;
     const borocode = this.model.borocode; // eslint-disable-line prefer-destructuring
-    const cleanBorough = boroLookup[borocode].toLowerCase().replace(/\s/g, '-');
+    const borough = boroLookup[borocode];
+    if (!borocd || !borough) return '';
+    const cleanBorough = borough.toLowerCase().replace(/\s/g, '-');
     const cd = parseInt(`${borocd}`.substring(1, 3), 10).toString();
     return `${cleanBorough}/${cd}`;
   }

@@ -1,149 +1,84 @@
 import Component from '@ember/component';
 import { action } from '@ember/object';
 import { inject as service } from '@ember/service';
-import bblDemux from '../utils/bbl-demux';
+
+const HISTORY_KEY = 'lotediretor-search-history';
 
 export default class MapResourceSearchComponent extends Component {
   @service router;
 
-  @service mainMap;
+  searchTerms = '';
 
-  @service metrics;
+  results = [];
 
-  @action
-  handleLookupSuccess(center, zoom, bbl) {
-    // if onSuccess from labs-bbl-lookup includes bbl, transition to lot route for that bbl
-    // otherwise flyTo the block
-    if (bbl) {
-      gtag('event', 'search', {
-        event_category: 'Search',
-        event_action: 'Used BBL Lookup',
-      });
+  loading = false;
 
-      // GA
-      this.metrics.trackEvent('MatomoTagManager', {
-        category: 'Search',
-        action: 'Used BBL Lookup',
-        name: 'Used BBL Lookup',
-      });
+  errorMessage = null;
 
-      const { boro, block, lot } = bblDemux(bbl);
-      this.router.transitionTo('map-feature.lot', boro, block, lot);
-    } else {
-      this.mainMap.mapInstance.flyTo({ center, zoom });
+  get searchHistory() {
+    try {
+      return JSON.parse(window.localStorage.getItem(HISTORY_KEY) || '[]');
+    } catch (_error) {
+      return [];
     }
   }
 
   @action
-  handleSearchSelect(result) {
-    const { mainMap } = this;
-    const mapInstance = mainMap.get('mapInstance');
-    const { type } = result;
+  updateSearch(event) {
+    this.set('searchTerms', event.target.value);
+  }
 
-    this.setProperties({
-      selected: 0,
-      focused: false,
-    });
-
-    if (type === 'lot') {
-      // GA
-      // address search maps to all-uppercase addresses whereas bbl lookups map to normal case addresses
-      if (
-        result.label.split(',')[0] === result.label.split(',')[0].toUpperCase()
-      ) {
-        gtag('event', 'search', {
-          event_category: 'Search',
-          event_action: 'Searched by Address',
-        });
-        this.metrics.trackEvent('MatomoTagManager', {
-          category: 'Search',
-          action: 'Searched by Address',
-          name: 'Searched by Address',
-        });
-      } else {
-        gtag('event', 'search', {
-          event_category: 'Search',
-          event_action: 'Used BBL Lookup',
-        });
-        this.metrics.trackEvent('MatomoTagManager', {
-          category: 'Search',
-          action: 'Used BBL Lookup',
-          name: 'Used BBL Lookup',
-        });
-      }
-
-      const { boro, block, lot } = bblDemux(result.bbl);
-      this.set('searchTerms', result.label);
-      if (this.router.currentRoute.name === 'map-feature.lot-comparison') {
-        this.router.transitionTo(
-          'map-feature.lot-comparison',
-          this.router.currentRoute.params.boro,
-          this.router.currentRoute.params.block,
-          this.router.currentRoute.params.lot,
-          boro,
-          block,
-          lot,
-          {
-            queryParams: { search: true },
-          }
-        );
-      } else {
-        this.router.transitionTo('map-feature.lot', boro, block, lot, {
-          queryParams: { search: true },
-        });
-      }
-    }
-
-    if (type === 'zma') {
-      this.set('searchTerms', result.label);
-      this.router.transitionTo(
-        'map-feature.zoning-map-amendment',
-        result.ulurpno,
-        { queryParams: { search: true } }
+  @action
+  async search(event) {
+    if (event) event.preventDefault();
+    const query = String(this.searchTerms || '').trim();
+    if (query.length < 2) return;
+    this.setProperties({ loading: true, errorMessage: null });
+    try {
+      const response = await fetch(
+        `/api/search?q=${encodeURIComponent(query)}`
       );
+      const payload = await response.json();
+      if (!response.ok)
+        throw new Error(payload.error || `HTTP ${response.status}`);
+      this.set('results', payload.results || []);
+    } catch (error) {
+      this.setProperties({
+        results: [],
+        errorMessage: error.message || 'Falha na busca',
+      });
+    } finally {
+      this.set('loading', false);
     }
+  }
 
-    if (type === 'zoning-district') {
-      gtag('event', 'search', {
-        event_category: 'Search',
-        event_action: 'Searched by Zoning District',
-      });
-      // GA
-      this.metrics.trackEvent('MatomoTagManager', {
-        category: 'Search',
-        action: 'Searched by Zoning District',
-        name: 'Searched by Zoning District',
-      });
+  remember(result) {
+    const current = this.searchHistory.filter((item) => item.id !== result.id);
+    const next = [result, ...current].slice(0, 8);
+    window.localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+    this.notifyPropertyChange('searchHistory');
+  }
 
-      this.set('searchTerms', result.label);
-      this.router.transitionTo('map-feature.zoning-district', result.label, {
-        queryParams: { search: true },
-      });
-    }
-
-    if (type === 'neighborhood') {
-      this.set('searchTerms', result.neighbourhood);
-      const center = result.coordinates;
-      mapInstance.flyTo({
-        center,
-        zoom: 13,
-      });
-    }
-
-    if (type === 'special-purpose-district') {
-      this.set('searchTerms', result.sdname);
+  @action
+  selectResult(result) {
+    this.remember(result);
+    this.setProperties({ searchTerms: result.label, results: [] });
+    if (result.type === 'sp-map-feature') {
       this.router.transitionTo(
-        'map-feature.special-purpose-district',
-        result.cartodb_id,
-        { queryParams: { search: true } }
+        'map-feature.sp-map-feature',
+        result.layerKey,
+        result.featureId
       );
+      return;
     }
-
-    if (type === 'commercial-overlay') {
-      this.set('searchTerms', result.label);
-      this.router.transitionTo('map-feature.commercial-overlay', result.label, {
-        queryParams: { search: true },
-      });
+    if (this.router.currentRoute.name === 'map-feature.sp-lot-comparison') {
+      this.router.transitionTo(
+        'map-feature.sp-lot-comparison',
+        String(this.router.currentRoute.params.id),
+        String(result.id)
+      );
+    } else {
+      this.router.transitionTo('map-feature.sp-lot', String(result.id));
     }
   }
 }

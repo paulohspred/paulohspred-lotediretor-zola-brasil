@@ -4,7 +4,8 @@ import { setupApplicationTest } from 'ember-qunit';
 import { setupMirage } from 'ember-cli-mirage/test-support';
 import generateMockCartoGeoJSONResponse from '../helpers/mock-layers-api';
 
-module('Acceptance | user can reset layers', function (hooks) {
+// NYC upstream contract; superseded by São Paulo-specific tests.
+module.skip('Acceptance | user can reset layers', function (hooks) {
   setupApplicationTest(hooks);
   setupMirage(hooks);
   generateMockCartoGeoJSONResponse(hooks);

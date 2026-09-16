@@ -14,6 +14,6 @@ export default class MainHeaderComponent extends Component {
 
   @computed('bookmarks.length', 'savedLayerSets.length')
   get totalBookmarks() {
-    return this.bookmarks.length + this.savedLayerSets.length;
+    return (this.bookmarks?.length || 0) + (this.savedLayerSets?.length || 0);
   }
 }

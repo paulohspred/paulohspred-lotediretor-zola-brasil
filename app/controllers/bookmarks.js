@@ -4,15 +4,6 @@ import { inject as service } from '@ember/service';
 import { computed as computedProp } from '@ember/object';
 import { Promise } from 'rsvp';
 
-const QUERY_PARAMS_LIST = [
-  'selectedZoning',
-  'selectedOverlays',
-  'selectedFirm',
-  'selectedPfirm',
-  'selectedCouncilDistricts',
-  'selectedLayerGroup',
-];
-
 export default Controller.extend({
   mainMap: service(),
   metrics: service(),
@@ -57,30 +48,23 @@ export default Controller.extend({
     },
 
     bookmarkCurrentLayerSet() {
-      let allLayers = [];
-      const visibleLayers = [];
-      const visibleLayerGroups = [];
-      this.router.currentRoute.parent.attributes.layerGroups.forEach((lg) => {
-        allLayers = allLayers.concat(lg.layers);
-        lg.visible ? visibleLayerGroups.push(lg.id) : null;
-      });
-      allLayers.forEach((layer) => {
-        layer.visibility ? visibleLayers.push(layer.id) : null;
-      });
-
-      const queryParams = {};
-      ['layer-groups', ...QUERY_PARAMS_LIST].forEach((selected) => {
-        queryParams[selected] = this.router.currentRoute.queryParams[selected]
-          ? JSON.parse(this.router.currentRoute.queryParams[selected])
-          : undefined;
-      });
+      const params = new URL(window.location.href).searchParams;
+      let spLayers = ['lotes', 'zoneamento'];
+      const raw = params.get('sp-layers');
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) spLayers = parsed;
+        } catch (_error) {
+          // keep the default São Paulo layer set
+        }
+      }
 
       const layerSet = {
         id: crypto.randomUUID(),
-        name: 'New Saved Layer Set',
-        visibleLayers,
-        visibleLayerGroups,
-        queryParams,
+        name: 'Novo conjunto de camadas',
+        spLayers,
+        queryParams: { 'sp-layers': spLayers },
       };
       this.set('savedLayerSets', [...this.savedLayerSets, layerSet]);
       window.localStorage['saved-layer-sets'] = JSON.stringify(
@@ -131,23 +115,15 @@ export default Controller.extend({
 
     loadBookmarkedLayerSettings(bookmarkId) {
       const layerToLoad = this.savedLayerSets.find(
-        (lg) => bookmarkId === lg.id
+        (layerSet) => bookmarkId === layerSet.id
       );
-      const layerGroups = [
-        ...this.router.currentRoute.parent.attributes.layerGroups,
-      ];
-      layerGroups.forEach((lg) => {
-        lg.visible = !!layerToLoad.visibleLayerGroups.includes(lg.id);
-        lg.layers.forEach((layer) => {
-          layer.visibility = !!layerToLoad.visibleLayers.includes(layer.id);
+      const spLayers =
+        layerToLoad.spLayers || layerToLoad.queryParams?.spLayers;
+      if (Array.isArray(spLayers)) {
+        this.router.transitionTo('bookmarks', {
+          queryParams: { 'sp-layers': spLayers },
         });
-      });
-
-      QUERY_PARAMS_LIST.forEach((selected) => {
-        this.router.currentRoute.queryParams[selected] =
-          layerToLoad.queryParams[selected];
-      });
-
+      }
       this.track('loadBookmarkedLayerSettings');
     },
   },

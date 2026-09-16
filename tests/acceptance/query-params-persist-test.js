@@ -20,7 +20,8 @@ const defaultNonVisible = defaultLayerGroupState
   .filter(({ visible }) => !visible)
   .map(({ id }) => id);
 
-module('Acceptance | query params persist', function (hooks) {
+// NYC upstream acceptance contract; superseded by São Paulo search/layers and sp-layers tests.
+module.skip('Acceptance | query params persist', function (hooks) {
   setupApplicationTest(hooks);
   setupMirage(hooks);
   mockLayersAPI(hooks);

@@ -490,4 +490,4 @@ async function buildSurroundingsAnalysis(nativeGeometry, requestJson) {
   };
 }
 
-module.exports = { buildSurroundingsAnalysis };
+module.exports = { buildSurroundingsAnalysis, SURROUNDING_LAYERS: LAYERS };

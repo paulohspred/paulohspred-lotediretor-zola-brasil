@@ -6,7 +6,10 @@ const { queryTpcl } = require('./sp-tpcl');
 const { queryAnnualIptu } = require('./sp-iptu-annual');
 const { buildLandUseAnalysis } = require('./sp-land-use');
 const { queryItbiHistory } = require('./sp-itbi-history');
-const { buildSurroundingsAnalysis } = require('./sp-surroundings');
+const {
+  buildSurroundingsAnalysis,
+  SURROUNDING_LAYERS,
+} = require('./sp-surroundings');
 
 const GEOSAMPA_WFS =
   'https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/ows';
@@ -22,6 +25,9 @@ const SAO_PAULO_LIMITS = {
 
 const MAX_TERRITORIAL_MATCHES = 20;
 const TERRITORIAL_CONCURRENCY = 4;
+const MAX_MAP_LAYER_FEATURES = 2500;
+const MAX_MAP_LAYER_BBOX_SPAN = 0.08;
+
 const TERRITORIAL_LAYERS = [
   {
     key: 'zoneamento',
@@ -229,6 +235,40 @@ const TERRITORIAL_LAYERS = [
   },
 ];
 
+const MAP_LAYER_EXTRA = [
+  {
+    key: 'setor_censitario',
+    label: 'Setores censitários 2022',
+    typeName: 'setor_censitario_2022',
+    geometryProperty: 'ge_poligono',
+    fields: ['cd_original_setor_censitario', 'qt_area_setor_censitario'],
+    titleKeys: ['cd_original_setor_censitario'],
+  },
+  {
+    key: 'edificacoes_3d',
+    label: 'Edificações 3D — altura oficial',
+    typeName: 'edificacao',
+    geometryProperty: 'ge_poligono',
+    fields: [
+      'cd_identificador',
+      'qt_area_projecao_beiral',
+      'qt_altura_edificacao',
+      'cd_identificador_lote',
+      'tx_escala',
+      'sg_fonte_original',
+      'dt_criacao',
+      'dt_atualizacao',
+    ],
+    titleKeys: ['cd_identificador'],
+  },
+];
+
+const MAP_LAYER_CONFIGS = new Map(
+  [...TERRITORIAL_LAYERS, ...SURROUNDING_LAYERS, ...MAP_LAYER_EXTRA].map(
+    (layer) => [layer.key, layer]
+  )
+);
+
 const httpsOptions = {
   headers: { Accept: 'application/json' },
 };
@@ -256,6 +296,28 @@ function parseBbox(value) {
     return null;
   }
 
+  return { west, south, east, north };
+}
+
+function parseMapLayerBbox(value) {
+  if (typeof value !== 'string') return null;
+  const parts = value.split(',').map(Number);
+  if (parts.length !== 4 || parts.some((part) => !Number.isFinite(part)))
+    return null;
+  const [west, south, east, north] = parts;
+  if (west >= east || south >= north) return null;
+  if (
+    east - west > MAX_MAP_LAYER_BBOX_SPAN ||
+    north - south > MAX_MAP_LAYER_BBOX_SPAN
+  )
+    return null;
+  if (
+    west < SAO_PAULO_LIMITS.west ||
+    east > SAO_PAULO_LIMITS.east ||
+    south < SAO_PAULO_LIMITS.south ||
+    north > SAO_PAULO_LIMITS.north
+  )
+    return null;
   return { west, south, east, north };
 }
 
@@ -360,8 +422,19 @@ function labelForField(field) {
     nm_area_risco_hidrologico: 'Área de risco',
     tx_macro_divisao_pde: 'Macrozona',
     nm_macroarea: 'Macroárea',
+    cd_quadricula: 'Quadrícula',
+    cd_levantamento: 'Levantamento',
+    qt_altura_edificacao: 'Altura da edificação',
+    qt_area_projecao_beiral: 'Área de projeção do beiral',
+    tx_escala: 'Escala',
+    dt_criacao: 'Criação',
   };
-  return labels[field] || field;
+  if (labels[field]) return labels[field];
+  return field
+    .replace(/^(nm|tx|cd|sg|qt|dc|dt)_/, '')
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 }
 
 function formatTerritorialValue(field, value) {
@@ -479,6 +552,104 @@ async function mapWithConcurrency(items, concurrency, mapper) {
   return results;
 }
 
+function mapFeaturePresentation(layer, properties) {
+  const titleFields =
+    layer.titleKeys || (layer.nameField ? [layer.nameField] : []);
+  const title =
+    titleFields
+      .map((field) => properties[field])
+      .filter(valueIsPresent)
+      .map(String)
+      .join(' — ') ||
+    layer.label ||
+    layer.key;
+  const hidden = new Set([
+    ...(titleFields || []),
+    '__feature_id',
+    '__layer_key',
+  ]);
+  const details = (layer.fields || Object.keys(properties))
+    .filter((field) => !hidden.has(field) && valueIsPresent(properties[field]))
+    .filter((field) => field !== layer.geometryProperty)
+    .map((field) => ({
+      label: labelForField(field),
+      value: formatTerritorialValue(field, properties[field]),
+    }));
+  return {
+    layerKey: layer.key,
+    layerLabel: layer.label || layer.key,
+    title,
+    details,
+  };
+}
+
+const SEARCHABLE_MAP_LAYER_KEYS = [
+  'zoneamento',
+  'metro',
+  'trem',
+  'terminal_onibus',
+  'corredor_onibus',
+  'educacao_publica',
+  'educacao_privada',
+  'ubs',
+  'hospital',
+  'parques',
+  'bibliotecas',
+  'museus',
+  'teatros_cinemas',
+];
+
+async function searchMapLayer(layer, query) {
+  const searchFields = [
+    ...(layer.titleKeys || []),
+    ...(layer.nameField ? [layer.nameField] : []),
+  ].filter((field, index, values) => field && values.indexOf(field) === index);
+  if (!searchFields.length) return [];
+  const escaped = query.replace(/'/g, "''").replace(/[%_]/g, '');
+  const cql = searchFields
+    .map((field) => `${field} ILIKE '%${escaped}%'`)
+    .join(' OR ');
+  try {
+    const payload = await requestGeoSampaJson({
+      service: 'WFS',
+      version: '2.0.0',
+      request: 'GetFeature',
+      typeNames: `geoportal:${layer.typeName}`,
+      count: '5',
+      outputFormat: 'application/json',
+      srsName: 'EPSG:4326',
+      propertyName: [
+        ...new Set([...(layer.fields || []), ...searchFields]),
+      ].join(','),
+      CQL_FILTER: cql,
+    });
+    return (payload.features || []).map((feature) => {
+      const properties = feature.properties || {};
+      const presentation = mapFeaturePresentation(layer, properties);
+      return {
+        type: 'sp-map-feature',
+        id: `${layer.key}::${feature.id}`,
+        featureId: feature.id,
+        layerKey: layer.key,
+        label: presentation.title,
+        subtitle: layer.label || layer.key,
+      };
+    });
+  } catch (_error) {
+    return [];
+  }
+}
+
+async function searchMapLayers(query) {
+  const layers = SEARCHABLE_MAP_LAYER_KEYS.map((key) =>
+    MAP_LAYER_CONFIGS.get(key)
+  ).filter(Boolean);
+  const groups = await mapWithConcurrency(layers, 4, (layer) =>
+    searchMapLayer(layer, query)
+  );
+  return groups.flat().slice(0, 30);
+}
+
 async function buildTerritorialAnalysis(nativeGeometry, lotId) {
   const lotWkt = geometryToWkt(nativeGeometry);
   const results = await mapWithConcurrency(
@@ -506,6 +677,192 @@ async function buildTerritorialAnalysis(nativeGeometry, lotId) {
 }
 
 module.exports = function (app) {
+  app.get('/api/search', async (req, res) => {
+    const query = String(req.query.q || '').trim();
+    if (query.length < 2 || query.length > 120) {
+      res
+        .status(400)
+        .json({ error: 'Informe ao menos 2 caracteres para buscar' });
+      return;
+    }
+    const escaped = query.replace(/'/g, "''");
+    const digits = query.replace(/\D/g, '');
+    const filters = [];
+    if (/^\d{6,9}$/.test(digits))
+      filters.push(`cd_identificador=${Number(digits)}`);
+    if (digits.length === 11) {
+      filters.push(
+        `cd_setor_fiscal='${digits.slice(
+          0,
+          3
+        )}' AND cd_quadra_fiscal='${digits.slice(
+          3,
+          6
+        )}' AND cd_lote='${digits.slice(
+          6,
+          10
+        )}' AND cd_digito_sql='${digits.slice(10)}'`
+      );
+    }
+    if (/^[A-Za-z0-9]{8}$/.test(query))
+      filters.push(`cd_cib='${escaped.toUpperCase()}'`);
+    const identifierSearch = filters.length > 0;
+    if (!identifierSearch) {
+      const addressText = escaped.replace(/[%_]/g, '');
+      filters.push(`nm_logradouro_completo ILIKE '%${addressText}%'`);
+    }
+    try {
+      const [payload, layerResults] = await Promise.all([
+        requestGeoSampaJson({
+          service: 'WFS',
+          version: '2.0.0',
+          request: 'GetFeature',
+          typeNames: 'geoportal:lote_cidadao',
+          count: '20',
+          outputFormat: 'application/json',
+          srsName: 'EPSG:4326',
+          propertyName:
+            'cd_identificador,cd_setor_fiscal,cd_quadra_fiscal,cd_lote,cd_digito_sql,cd_cib,nm_logradouro_completo,cd_numero_porta,tx_complemento_endereco',
+          CQL_FILTER: filters.map((filter) => `(${filter})`).join(' OR '),
+        }),
+        identifierSearch ? Promise.resolve([]) : searchMapLayers(query),
+      ]);
+      const seen = new Set();
+      const results = (payload.features || [])
+        .map((feature) => feature.properties || {})
+        .filter((properties) => {
+          const id = String(properties.cd_identificador || '');
+          if (!id || seen.has(id)) return false;
+          seen.add(id);
+          return true;
+        })
+        .map((properties) => ({
+          type: 'sp-lot',
+          id: String(properties.cd_identificador),
+          label: [properties.nm_logradouro_completo, properties.cd_numero_porta]
+            .filter(Boolean)
+            .join(', '),
+          subtitle: `SQL ${properties.cd_setor_fiscal || ''}.${
+            properties.cd_quadra_fiscal || ''
+          }.${properties.cd_lote || ''}-${properties.cd_digito_sql || ''}${
+            properties.cd_cib ? ` · CIB ${properties.cd_cib}` : ''
+          }`,
+        }));
+      const seenThematic = new Set();
+      const thematicResults = layerResults.filter((result) => {
+        const key = `${result.layerKey}:${result.label}`;
+        if (seenThematic.has(key)) return false;
+        seenThematic.add(key);
+        return true;
+      });
+      res.status(200).json({
+        query,
+        results: identifierSearch
+          ? results
+          : [...thematicResults, ...results].slice(0, 40),
+      });
+    } catch (error) {
+      res
+        .status(502)
+        .json({ error: error.message || 'Falha ao consultar imóveis' });
+    }
+  });
+
+  app.get('/api/geosampa/camadas/:key', async (req, res) => {
+    const layer = MAP_LAYER_CONFIGS.get(String(req.params.key || ''));
+    if (!layer) {
+      res
+        .status(404)
+        .json({ error: 'Camada não disponibilizada pelo LoteDiretor' });
+      return;
+    }
+    const bbox = parseMapLayerBbox(req.query.bbox);
+    if (!bbox) {
+      res.status(400).json({ error: 'bbox inválida para camada de mapa' });
+      return;
+    }
+    try {
+      const payload = await requestGeoSampaJson({
+        service: 'WFS',
+        version: '2.0.0',
+        request: 'GetFeature',
+        typeNames: `geoportal:${layer.typeName}`,
+        count: String(MAX_MAP_LAYER_FEATURES),
+        outputFormat: 'application/json',
+        srsName: 'EPSG:4326',
+        bbox: `${bbox.west},${bbox.south},${bbox.east},${bbox.north},EPSG:4326`,
+        propertyName: [
+          ...new Set([...(layer.fields || []), layer.geometryProperty]),
+        ].join(','),
+      });
+      (payload.features || []).forEach((feature) => {
+        feature.properties = feature.properties || {};
+        const presentation = mapFeaturePresentation(layer, feature.properties);
+        feature.properties.__feature_id = feature.id;
+        feature.properties.__layer_key = layer.key;
+        feature.properties.__title = presentation.title;
+        feature.properties.__subtitle = presentation.details
+          .slice(0, 2)
+          .map((detail) => `${detail.label}: ${detail.value}`)
+          .join(' · ');
+        feature.properties.__layer_label = presentation.layerLabel;
+      });
+      res.set('Cache-Control', 'public, max-age=45');
+      res.status(200).json(payload);
+    } catch (error) {
+      res
+        .status(502)
+        .json({ error: error.message || 'Falha ao consultar camada GeoSampa' });
+    }
+  });
+
+  app.get('/api/geosampa/feicoes/:key/:featureId', async (req, res) => {
+    const layer = MAP_LAYER_CONFIGS.get(String(req.params.key || ''));
+    if (!layer) {
+      res
+        .status(404)
+        .json({ error: 'Camada não disponibilizada pelo LoteDiretor' });
+      return;
+    }
+    const featureId = String(req.params.featureId || '');
+    if (!/^[A-Za-z0-9_.:-]+$/.test(featureId)) {
+      res.status(400).json({ error: 'Identificador de feição inválido' });
+      return;
+    }
+    try {
+      const payload = await requestGeoSampaJson({
+        service: 'WFS',
+        version: '2.0.0',
+        request: 'GetFeature',
+        typeNames: `geoportal:${layer.typeName}`,
+        count: '1',
+        outputFormat: 'application/json',
+        srsName: 'EPSG:4326',
+        resourceId: featureId,
+        propertyName: [
+          ...new Set([...(layer.fields || []), layer.geometryProperty]),
+        ].join(','),
+      });
+      const feature = payload.features?.[0];
+      if (!feature) {
+        res.status(404).json({ error: 'Feição não encontrada' });
+        return;
+      }
+      feature.properties = feature.properties || {};
+      feature.properties.id = `${layer.key}::${featureId}`;
+      feature.properties.presentation = mapFeaturePresentation(
+        layer,
+        feature.properties
+      );
+      res.set('Cache-Control', 'public, max-age=120');
+      res.status(200).json({ type: 'FeatureCollection', features: [feature] });
+    } catch (error) {
+      res
+        .status(502)
+        .json({ error: error.message || 'Falha ao consultar feição GeoSampa' });
+    }
+  });
+
   app.get('/api/geosampa/lotes', async (req, res) => {
     const bbox = parseBbox(req.query.bbox);
     if (!bbox) {

@@ -15,21 +15,32 @@ export default class MapboxMapFeatureRenderer extends Component {
   didInsertElement(...args) {
     super.didInsertElement(...args);
 
-    // if they match it's the selection
-    // if the boro is 0 then there's no comparison area selected yet
-    // otherwise, it's the comparison selection
-    if (
-      this.model.properties.borocode ===
-        parseInt(this.router.currentRoute.params.boro, 10) &&
-      this.model.properties.block ===
-        parseInt(this.router.currentRoute.params.block, 10) &&
-      this.model.properties.lot ===
-        parseInt(this.router.currentRoute.params.lot, 10)
+    const { currentRoute } = this.router;
+
+    if (!currentRoute) {
+      this.setSelectedFeature(this.model);
+      this.setComparisonSelectedFeature(null);
+      return;
+    }
+
+    const { name = '', params = {} } = currentRoute;
+    const properties = this.model.properties || {};
+
+    if (name === 'map-feature.sp-lot-comparison') {
+      if (String(this.model.id) === String(params.id)) {
+        this.setSelectedFeature(this.model);
+      } else if (String(params.comparisonid) !== '0') {
+        this.setComparisonSelectedFeature(this.model);
+      }
+    } else if (
+      properties.borocode === parseInt(params.boro, 10) &&
+      properties.block === parseInt(params.block, 10) &&
+      properties.lot === parseInt(params.lot, 10)
     ) {
       this.setSelectedFeature(this.model);
     } else if (
-      this.router.currentRoute.params.comparisonboro !== '0' &&
-      this.router.currentRoute.name === 'map-feature.lot-comparison'
+      params.comparisonboro !== '0' &&
+      name === 'map-feature.lot-comparison'
     ) {
       this.setComparisonSelectedFeature(this.model);
     } else {

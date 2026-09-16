@@ -5,5 +5,6 @@ module.exports = {
     'ember-promise-helpers': '2.0.0',
     'ember-in-element-polyfill': '0.1.3 || 0.2.2 || 1.0.1',
     'ember-get-config': '0.5.0 || 1.1.0 || 2.1.1',
+    'ember-concurrency': '2.3.7 || 3.1.1',
   },
 };

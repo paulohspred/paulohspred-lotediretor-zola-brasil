@@ -37,9 +37,9 @@ module.exports = function (environment) {
     },
 
     defaultLayerGroupState: [
-      { id: 'zoning-districts', visible: true },
-      { id: 'street-centerlines', visible: true },
-      { id: 'commercial-overlays', visible: true },
+      { id: 'zoning-districts', visible: false },
+      { id: 'street-centerlines', visible: false },
+      { id: 'commercial-overlays', visible: false },
       { id: 'zoning-map-amendments', visible: false },
       { id: 'zoning-map-amendments-pending', visible: false },
       {
@@ -70,15 +70,15 @@ module.exports = function (environment) {
       { id: 'ny-senate-districts', visible: false },
       { id: 'assembly-districts', visible: false },
       { id: 'neighborhood-tabulation-areas', visible: false },
-      { id: 'building-footprints', visible: true },
+      { id: 'building-footprints', visible: false },
       { id: 'three-d-buildings', visible: false },
       { id: 'aerials', visible: false },
-      { id: 'tax-lots', visible: true, layers: [{ tooltipable: true }] },
+      { id: 'tax-lots', visible: false, layers: [{ tooltipable: true }] },
       { id: 'landmarks', visible: false },
       { id: 'e-designations', visible: false },
       { id: 'zoning-map-index', visible: false },
       { id: 'zoning-for-accessibility', visible: false },
-      { id: 'unified-transit-lines', visible: true },
+      { id: 'unified-transit-lines', visible: false },
     ],
 
     specialDistrictCrosswalk: [

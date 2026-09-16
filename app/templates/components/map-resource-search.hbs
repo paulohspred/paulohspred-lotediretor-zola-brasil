@@ -1,12 +1,38 @@
-<div class="search-container hide-for-print">
-  <LabsSearch
-    data-test-search="resource"
-    @onSelect={{action "handleSearchSelect"}}
-    @typeTitleLookup={{this.resourceTitleLookup}}
-    @useSearchHistory={{true}}
-  />
-  <LabsBblLookup
-    data-test-search="bbl"
-    @onSuccess={{this.handleLookupSuccess}}
-  />
+<div class="search-container hide-for-print" style="padding:0.5rem;">
+  <form {{on "submit" this.search}} style="display:flex; gap:0.35rem;">
+    <input
+      type="search"
+      value={{this.searchTerms}}
+      placeholder="Endereço, SQL, CIB, zona, estação ou equipamento"
+      aria-label="Buscar imóvel em São Paulo"
+      {{on "input" this.updateSearch}}
+      style="margin-bottom:0;"
+    />
+    <button class="button tiny" type="submit" style="margin-bottom:0;">
+      <FaIcon @icon="search" />
+    </button>
+  </form>
+  {{#if this.loading}}<p class="text-small">Buscando…</p>{{/if}}
+  {{#if this.errorMessage}}<p class="text-small alert">{{this.errorMessage}}</p>{{/if}}
+  {{#if this.results.length}}
+    <ul class="no-bullet" style="background:white; border:1px solid #ddd; margin:0; padding:0.35rem; max-height:18rem; overflow:auto;">
+      {{#each this.results as |result|}}
+        <li>
+          <button class="button clear expanded text-left" type="button" {{on "click" (fn this.selectResult result)}}>
+            <strong>{{result.label}}</strong><br />
+            <small>{{result.subtitle}}</small>
+          </button>
+        </li>
+      {{/each}}
+    </ul>
+  {{else if this.searchHistory.length}}
+    <details style="margin-top:0.35rem;">
+      <summary class="text-small">Buscas recentes</summary>
+      <ul class="no-bullet">
+        {{#each this.searchHistory as |result|}}
+          <li><button class="button clear tiny" type="button" {{on "click" (fn this.selectResult result)}}>{{result.label}}</button></li>
+        {{/each}}
+      </ul>
+    </details>
+  {{/if}}
 </div>

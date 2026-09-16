@@ -4,7 +4,8 @@ import { render, find } from '@ember/test-helpers';
 import hbs from 'htmlbars-inline-precompile';
 import { setupMirage } from 'ember-cli-mirage/test-support';
 
-module(
+// NYC upstream tax-lot view; São Paulo uses layer-record-views/sp-tax-lot.
+module.skip(
   'Integration | Component | layer-record-views/tax-lot',
   function (hooks) {
     setupRenderingTest(hooks);

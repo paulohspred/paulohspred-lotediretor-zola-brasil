@@ -5,6 +5,10 @@ import { tracked } from '@glimmer/tracking';
 import { inject as service } from '@ember/service';
 import QueryParams from '@nycplanning/ember-parachute';
 import config from 'labs-zola/config/environment';
+import {
+  DEFAULT_SP_LAYERS,
+  SP_IMAGERY_LAYER_IDS,
+} from '../utils/sp-map-layers';
 
 const {
   defaultLayerGroupState,
@@ -76,6 +80,11 @@ export const mapQueryParams = new QueryParams(
 
     // TODO: After merge of params refactor, update print service based on this param.
     print: { defaultValue: false },
+
+    spLayers: {
+      defaultValue: DEFAULT_SP_LAYERS,
+      as: 'sp-layers',
+    },
   })
 );
 
@@ -117,6 +126,34 @@ export default class ApplicationController extends Controller.extend(
 
     this.set('layerGroups', visibleLayerGroups);
     this.set('layerGroupsStorage', null);
+  }
+
+  @action
+  toggleSpLayer(layerId) {
+    const current = Array.isArray(this.spLayers) ? this.spLayers : [];
+    this.set(
+      'spLayers',
+      current.includes(layerId)
+        ? current.filter((id) => id !== layerId)
+        : [...current, layerId]
+    );
+  }
+
+  @action
+  resetSpLayers() {
+    this.set('spLayers', [...DEFAULT_SP_LAYERS]);
+  }
+
+  @action
+  setSpImageryLayer(layerId) {
+    const current = Array.isArray(this.spLayers) ? this.spLayers : [];
+    const withoutImagery = current.filter(
+      (id) => !SP_IMAGERY_LAYER_IDS.includes(id)
+    );
+    this.set(
+      'spLayers',
+      layerId ? [...withoutImagery, layerId] : withoutImagery
+    );
   }
 
   @action

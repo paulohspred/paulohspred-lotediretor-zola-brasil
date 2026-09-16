@@ -1,0 +1,15 @@
+<label class="header-label clearfix">CAMADA OFICIAL · GEOSAMPA</label>
+<h1 class="content-header">{{@model.presentation.title}}</h1>
+<p class="text-small dark-gray">{{@model.presentation.layerLabel}}</p>
+<hr />
+<section>
+  {{#each @model.presentation.details as |detail|}}
+    <div class="data-grid">
+      <label class="data-label">{{detail.label}}</label>
+      <span class="datum">{{detail.value}}</span>
+    </div>
+  {{/each}}
+</section>
+<p class="text-small medium-gray" style="margin-top:1rem;">
+  Fonte: GeoSampa — Prefeitura de São Paulo. Os atributos exibidos correspondem à feição oficial selecionada.
+</p>

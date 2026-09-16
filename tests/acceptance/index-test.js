@@ -28,7 +28,8 @@ const resultAt = function (x) {
   return `${SEARCH_RESULTS_SELECTOR} li:nth-child(${x + 1})`;
 };
 
-module('Acceptance | index', function (hooks) {
+// NYC upstream acceptance contract; superseded by São Paulo search/layers and sp-layers tests.
+module.skip('Acceptance | index', function (hooks) {
   setupApplicationTest(hooks);
   setupMirage(hooks);
   stubBasicMap(hooks);

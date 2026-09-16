@@ -1,0 +1,4 @@
+<CartoDataProvider @modelId={{this.model.id}} @modelName="sp-map-feature" as |feature|>
+  <Mapbox::MapFeatureRenderer @model={{feature}} />
+  <LayerRecordViews::SpMapFeature @model={{feature.properties}} />
+</CartoDataProvider>

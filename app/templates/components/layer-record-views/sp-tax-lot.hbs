@@ -1,4 +1,27 @@
 <label class="header-label clearfix">
+  {{#if @comparisonMode}}
+    {{#if @otherModelId}}
+      <button
+        class="float-right"
+        style="color: #ae561f;"
+        type="button"
+        {{on "click" this.removeComparisonLot}}
+        title="Remover este lote da comparação"
+      >
+        <FaIcon @icon="times" />
+      </button>
+    {{/if}}
+  {{else}}
+    <button
+      class="add-comparison-lot-button show-for-medium"
+      type="button"
+      {{on "click" this.compareLot}}
+    >
+      <FaIcon @icon="plus" />
+      Comparar com outro lote
+    </button>
+    <br />
+  {{/if}}
   LOTE FISCAL
   <span class="medium-gray">|</span>
   GEOSAMPA

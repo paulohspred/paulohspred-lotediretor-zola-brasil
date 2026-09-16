@@ -19,7 +19,7 @@ module('Integration | Component | print-view-controls', function (hooks) {
     assert.ok(!find('[data-test-print-control="landscape"] .a11y-orange'));
     assert.ok(find('[data-test-print-control="portrait"] .a11y-orange'));
 
-    assert.ok(find('[data-test-print-control="letter"] .a11y-orange'));
+    assert.ok(find('[data-test-print-control="A4"] .a11y-orange'));
     assert.ok(!find('[data-test-print-control="legal"] .a11y-orange'));
     assert.ok(!find('[data-test-print-control="tabloid"] .a11y-orange'));
 

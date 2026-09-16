@@ -72,7 +72,7 @@ export default class MapMeasurementToolsComponent extends Component {
 
   @service metrics;
 
-  measurementUnitType = 'standard';
+  measurementUnitType = 'metric';
 
   drawnMeasurements = null;
 
@@ -161,28 +161,37 @@ export default class MapMeasurementToolsComponent extends Component {
   @action
   handleDrawCreate(e) {
     const { draw } = this;
+    const currentMeasurements = this.drawnMeasurements;
 
     this.set('drawnFeatures', [
       ...this.drawnFeatures,
       { ...e.features[0].geometry, id: crypto.randomUUID() },
     ]);
-    this.set('previousStoredMeasurements', {
-      type: this.drawnMeasurements.type,
-      metric:
-        this.drawnMeasurements.metric + this.previousStoredMeasurements.metric,
-      standard:
-        this.drawnMeasurements.standard +
-        this.previousStoredMeasurements.standard,
-    });
+
+    // Mapbox Draw may emit draw.create before the asynchronous draw.render
+    // measurement has completed. Only accumulate a completed measurement.
+    if (currentMeasurements) {
+      this.set('previousStoredMeasurements', {
+        type: currentMeasurements.type,
+        metric:
+          currentMeasurements.metric + this.previousStoredMeasurements.metric,
+        standard:
+          currentMeasurements.standard +
+          this.previousStoredMeasurements.standard,
+      });
+    }
+
     setTimeout(() => {
       if (!this.mainMap.isDestroyed && !this.mainMap.isDestroying) {
         this.mainMap.mapInstance.removeControl(draw);
         this.mainMap.set('drawMode', null);
-        this.set('drawnMeasurements', {
-          type: this.drawnMeasurements.type,
-          metric: 0,
-          standard: 0,
-        });
+        if (currentMeasurements) {
+          this.set('drawnMeasurements', {
+            type: currentMeasurements.type,
+            metric: 0,
+            standard: 0,
+          });
+        }
       }
     }, 100);
   }

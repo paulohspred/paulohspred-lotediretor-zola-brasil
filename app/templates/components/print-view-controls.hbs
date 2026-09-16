@@ -47,6 +47,38 @@
     Size:
   </h6>
   <button
+    onclick={{action (mut this.printSvc.printViewPaperSize) "A4"}}
+    data-test-print-control="A4" type="button"
+  >
+    <span class="fa-layers">
+      {{#if (eq this.printSvc.printViewPaperSize "A4")}}
+        <FaIcon @icon="circle" class="white" />
+        <FaIcon @icon="circle" @prefix="far" class="light-gray" />
+        <FaIcon @icon="circle" @transform="shrink-6" class="a11y-orange" />
+      {{else}}
+        <FaIcon @icon="circle" class="silver" />
+        <FaIcon @icon="circle" @prefix="far" class="light-gray" />
+      {{/if}}
+    </span>
+    A4
+  </button>
+  <button
+    onclick={{action (mut this.printSvc.printViewPaperSize) "A3"}}
+    data-test-print-control="A3" type="button"
+  >
+    <span class="fa-layers">
+      {{#if (eq this.printSvc.printViewPaperSize "A3")}}
+        <FaIcon @icon="circle" class="white" />
+        <FaIcon @icon="circle" @prefix="far" class="light-gray" />
+        <FaIcon @icon="circle" @transform="shrink-6" class="a11y-orange" />
+      {{else}}
+        <FaIcon @icon="circle" class="silver" />
+        <FaIcon @icon="circle" @prefix="far" class="light-gray" />
+      {{/if}}
+    </span>
+    A3
+  </button>
+  <button
     onclick={{action (mut this.printSvc.printViewPaperSize) "letter"}}
     data-test-print-control="letter" type="button"
   >

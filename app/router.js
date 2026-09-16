@@ -23,6 +23,12 @@ Router.map(function () {// eslint-disable-line
   this.route('map-feature', { path: '/l' }, function () {
     this.route('lot', { path: 'lot/:boro/:block/:lot' });
     this.route('sp-lot', { path: 'lote-sp/:id' });
+    this.route('sp-lot-comparison', {
+      path: 'comparar-lotes-sp/:id/:comparisonid',
+    });
+    this.route('sp-map-feature', {
+      path: 'camada-sp/:layer/:feature_id',
+    });
     this.route('lot-comparison', {
       path: 'lot-comparison/:boro/:block/:lot/:comparisonboro/:comparisonblock/:comparisonlot/',
     });

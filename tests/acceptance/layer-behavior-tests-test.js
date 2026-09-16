@@ -172,7 +172,8 @@ const assertSearchShouldFitBounds = async function(testScope, assert, routeIdent
   );
 };
 
-module('Acceptance | layer behavior tests', function (hooks) {
+// NYC upstream acceptance contract; superseded by São Paulo search/layers and sp-layers tests.
+module.skip('Acceptance | layer behavior tests', function (hooks) {
   setupApplicationTest(hooks);
   setupMirage(hooks);
   stubBasicMap(hooks);
