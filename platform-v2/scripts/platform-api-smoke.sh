@@ -40,6 +40,20 @@ PY
 
 test "$(curl -sS -o /tmp/notfound -w '%{http_code}' http://127.0.0.1:54000/api/v1/sources/NAO_EXISTE)" = 404
 
+curl -fsS 'http://127.0.0.1:54000/api/v1/source-snapshots?municipalityIbge=3550308&limit=10' >/tmp/ld-api-snapshots.json
+python3 - <<'PY'
+import json
+rows=json.load(open('/tmp/ld-api-snapshots.json'))
+assert isinstance(rows, list), rows
+for row in rows:
+    assert row['sourceRegistryId'], row
+    assert row['sourceCode'], row
+    assert len(row['sha256'])==64, row
+    assert row['ingestedAt'], row
+PY
+
+test "$(curl -sS -o /tmp/ld-api-snapshot-notfound -w '%{http_code}' http://127.0.0.1:54000/api/v1/source-snapshots/00000000-0000-0000-0000-000000000000)" = 404
+
 curl -fsS -H 'content-type: application/json' \
   --data '{"query":"query { sources(municipalityIbge: \"3550308\") { sourceCode datasetCode ingestionStatus } }"}' \
   http://127.0.0.1:54000/graphql >/tmp/ld-api-graphql.json
@@ -74,6 +88,16 @@ assert 'errors' not in j, j
 assert isinstance(j['data']['evidence'], list), j
 PY
 
+curl -fsS -H 'content-type: application/json' \
+  --data '{"query":"query { sourceSnapshots(municipalityIbge: \"3550308\", limit: 10) { id sourceRegistryId sourceCode datasetCode sha256 ingestedAt parserVersion } }"}' \
+  http://127.0.0.1:54000/graphql >/tmp/ld-api-snapshots-graphql.json
+python3 - <<'PY'
+import json
+j=json.load(open('/tmp/ld-api-snapshots-graphql.json'))
+assert 'errors' not in j, j
+assert isinstance(j['data']['sourceSnapshots'], list), j
+PY
+
 curl -fsS http://127.0.0.1:54000/api/docs/openapi.json >/tmp/ld-api-openapi.json
 python3 - <<'PY'
 import json
@@ -81,10 +105,13 @@ j=json.load(open('/tmp/ld-api-openapi.json'))
 assert j['openapi']=='3.0.0', j['openapi']
 assert '/api/v1/health' in j['paths']
 assert '/api/v1/sources' in j['paths']
+assert '/api/v1/source-snapshots' in j['paths']
+assert '/api/v1/source-snapshots/{id}' in j['paths']
 assert '/api/v1/evidence' in j['paths']
 assert '/api/v1/evidence/{id}' in j['paths']
 schemas=j.get('components',{}).get('schemas',{})
 assert 'SourceRegistryEntry' in schemas, j.get('components')
+assert 'SourceSnapshotRecord' in schemas, j.get('components')
 assert 'EvidenceRecord' in schemas, j.get('components')
 PY
 
@@ -97,16 +124,19 @@ for _ in $(seq 1 30); do
   sleep 1
 done
 curl -fsS http://127.0.0.1:58088/api/v1/sources >/tmp/ld-edge-sources.json
+curl -fsS 'http://127.0.0.1:58088/api/v1/source-snapshots?limit=1' >/tmp/ld-edge-snapshots.json
 curl -fsS 'http://127.0.0.1:58088/api/v1/evidence?limit=1' >/tmp/ld-edge-evidence.json
-curl -fsS -H 'content-type: application/json' --data '{"query":"{ sources { sourceCode } evidence(limit: 1) { id status } }"}' http://127.0.0.1:58088/graphql >/tmp/ld-edge-gql.json
+curl -fsS -H 'content-type: application/json' --data '{"query":"{ sources { sourceCode } sourceSnapshots(limit: 1) { id sha256 } evidence(limit: 1) { id status } }"}' http://127.0.0.1:58088/graphql >/tmp/ld-edge-gql.json
 curl -fsS http://127.0.0.1:58088/api/docs/openapi.json >/dev/null
 python3 - <<'PY'
 import json
 assert len(json.load(open('/tmp/ld-edge-sources.json')))==9
+assert isinstance(json.load(open('/tmp/ld-edge-snapshots.json')), list)
 assert isinstance(json.load(open('/tmp/ld-edge-evidence.json')), list)
 gql=json.load(open('/tmp/ld-edge-gql.json'))
 assert len(gql['data']['sources'])==9
+assert isinstance(gql['data']['sourceSnapshots'], list)
 assert isinstance(gql['data']['evidence'], list)
 PY
 
-echo 'platform-api-smoke=OK sources=9 evidence=OK rest=OK graphql=OK openapi=OK correlation=OK edge=OK'
+echo 'platform-api-smoke=OK sources=9 snapshots=OK evidence=OK rest=OK graphql=OK openapi=OK correlation=OK edge=OK'

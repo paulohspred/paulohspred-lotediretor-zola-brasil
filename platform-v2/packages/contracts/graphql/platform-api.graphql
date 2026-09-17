@@ -66,6 +66,8 @@ type Query {
   evidence(evidenceType: String, limit: Int, locator: String, municipalityIbge: String, sourceCode: String, status: EvidenceStatus): [EvidenceRecord!]!
   evidenceById(id: String!): EvidenceRecord
   source(municipalityIbge: String, sourceCode: String!): SourceRegistryEntry
+  sourceSnapshot(id: String!): SourceSnapshotRecord
+  sourceSnapshots(limit: Int, municipalityIbge: String, sha256: String, sourceCode: String): [SourceSnapshotRecord!]!
   sources(municipalityIbge: String): [SourceRegistryEntry!]!
 }
 
@@ -89,4 +91,24 @@ type SourceRegistryEntry {
   parserVersion: String
   sourceCode: String!
   sourceType: String!
+}
+
+type SourceSnapshotRecord {
+  accessClass: String!
+  authority: String!
+  byteSize: String
+  datasetCode: String!
+  featureCount: String
+  id: ID!
+  ingestedAt: String!
+  mediaType: String
+  municipalityIbge: String
+  municipalityName: String
+  objectKey: String!
+  parserVersion: String
+  schemaFingerprint: String
+  sha256: String!
+  sourceCode: String!
+  sourcePublishedAt: String
+  sourceRegistryId: ID!
 }

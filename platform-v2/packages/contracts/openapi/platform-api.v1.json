@@ -320,6 +320,100 @@
           "endpoints"
         ],
         "type": "object"
+      },
+      "SourceSnapshotRecord": {
+        "properties": {
+          "accessClass": {
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D",
+              "E",
+              "F"
+            ],
+            "example": "B",
+            "type": "string"
+          },
+          "authority": {
+            "example": "Prefeitura de São Paulo / GeoSampa",
+            "type": "string"
+          },
+          "byteSize": {
+            "description": "Byte size as a decimal string.",
+            "example": "1048576",
+            "type": "string"
+          },
+          "datasetCode": {
+            "example": "LOTE_FISCAL",
+            "type": "string"
+          },
+          "featureCount": {
+            "description": "Feature count as a decimal string.",
+            "example": "250000",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "ingestedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "mediaType": {
+            "example": "application/geo+json",
+            "type": "string"
+          },
+          "municipalityIbge": {
+            "example": "3550308",
+            "type": "string"
+          },
+          "municipalityName": {
+            "example": "São Paulo",
+            "type": "string"
+          },
+          "objectKey": {
+            "example": "snapshots/geosampa/lotes/2026-09-17.geojson",
+            "type": "string"
+          },
+          "parserVersion": {
+            "example": "geosampa-lote-v1",
+            "type": "string"
+          },
+          "schemaFingerprint": {
+            "example": "sha256:...",
+            "type": "string"
+          },
+          "sha256": {
+            "example": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            "type": "string"
+          },
+          "sourceCode": {
+            "example": "PMSP_GEOSAMPA_LOTES",
+            "type": "string"
+          },
+          "sourcePublishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "sourceRegistryId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "sourceRegistryId",
+          "sourceCode",
+          "datasetCode",
+          "authority",
+          "accessClass",
+          "objectKey",
+          "sha256",
+          "ingestedAt"
+        ],
+        "type": "object"
       }
     }
   },
@@ -476,6 +570,101 @@
         "summary": "Platform API liveness/readiness status",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/v1/source-snapshots": {
+      "get": {
+        "operationId": "SourceSnapshotController_list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "municipalityIbge",
+            "required": false,
+            "schema": {
+              "example": "3550308",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sourceCode",
+            "required": false,
+            "schema": {
+              "example": "PMSP_GEOSAMPA_LOTES",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sha256",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "example": 100,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SourceSnapshotRecord"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Source snapshots"
+          }
+        },
+        "summary": "List immutable source snapshot metadata",
+        "tags": [
+          "source-snapshots"
+        ]
+      }
+    },
+    "/api/v1/source-snapshots/{id}": {
+      "get": {
+        "operationId": "SourceSnapshotController_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceSnapshotRecord"
+                }
+              }
+            },
+            "description": "Source snapshot"
+          },
+          "404": {
+            "description": "Source snapshot not found"
+          }
+        },
+        "summary": "Get one immutable source snapshot metadata record",
+        "tags": [
+          "source-snapshots"
         ]
       }
     },

@@ -7,11 +7,15 @@ Contratos executáveis atuais:
 - `GET /api/v1/health`
 - `GET /api/v1/sources?municipalityIbge=3550308`
 - `GET /api/v1/sources/:sourceCode`
+- `GET /api/v1/source-snapshots`
+- `GET /api/v1/source-snapshots/:id`
 - `GET /api/v1/evidence`
 - `GET /api/v1/evidence/:id`
 - `POST /graphql`
 - `GET /api/docs`
 - `GET /api/docs/openapi.json`
+
+Source Registry, Source Snapshot e Evidence são somente leitura nesta etapa. `source-snapshots` expõe metadados imutáveis de captura (hash SHA-256, object key, versão de parser, publicação/ingestão e contagens) sem criar snapshots por HTTP.
 
 A Evidence API é somente leitura nesta etapa. Ela compõe `evidence.evidence` com o snapshot e a fonte de origem, citações, a avaliação de qualidade mais recente e links de proveniência. O status técnico `NAO_DISPONIVEL` é exposto com o rótulo humano `Não disponível`.
 

@@ -11,7 +11,7 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 | Etapa | Blueprint | Estado atual | Próximo gate |
 |---|---|---|---|
 | 0 | Fundação | **PARCIAL / RUNTIME + PLATFORM API PROVADOS** | Auth/realm Keycloak, tenant context, app shells e promoção para staging |
-| 1 | Core territorial | **PARCIAL / SP FORTE + SOURCE REGISTRY + EVIDENCE API** | ingestão real de snapshots/evidências, IBGE nacional, Parcel Resolver genérico, MVT temático e relatório v1 por API |
+| 1 | Core territorial | **PARCIAL / SP FORTE + SOURCE REGISTRY + SNAPSHOT + EVIDENCE API** | ingestão real de snapshots/evidências, IBGE nacional, Parcel Resolver genérico, MVT temático e relatório v1 por API |
 | 2 | UX cliente | **PARCIAL / ZOLA MODULAR SHELL** | ligar módulos ao novo core preservando mapa, busca, camadas e fluxos existentes |
 | 3 | Imóvel 360 | **PARCIAL / SHELL + IMÓVEL ATIVO** | migrar progressivamente o relatório territorial para contratos/evidências da Platform API |
 | 4 | RE Rural | **NÃO INICIADA** | CAR/SIGEF/SNCR/CIB/IBAMA/INPE + overlaps/monitoring |
@@ -40,7 +40,8 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 
 ### Fundação / Data Plane
 - PostgreSQL/PostGIS v2 com schemas do Blueprint e migrations versionadas.
-- `core.source_registry`, endpoint, licença, cobertura, snapshot e health.
+- `core.source_registry`, endpoint, licença, cobertura e health.
+- Source Snapshot API read-only para metadados imutáveis de captura, hash, parser, timestamps e contagens; falta o pipeline de ingestão/object storage.
 - Evidence API read-only: snapshot/fonte, hash, parser version, vigência, citações, qualidade e proveniência; falta ingestão real e modelagem explícita de conflitos.
 - Object storage imutável para artefatos brutos e relatórios.
 - Valkey para cache/locks; NATS JetStream para eventos; OpenSearch para busca documental.
