@@ -5,17 +5,31 @@
 >
   <h3 class="header-medium">Identidade cadastral versionada</h3>
   {{#if this.loading}}
-    <p class="text-small">Consultando evidência do imóvel na Platform API…</p>
+    <p class="text-small">Consultando evidências do imóvel na Platform API…</p>
   {{else if this.errorMessage}}
     <p class="callout warning text-small" data-test-property-evidence-error>
-      A evidência versionada do imóvel está temporariamente indisponível. O relatório atual continua operando.
+      As evidências versionadas do imóvel estão temporariamente indisponíveis. O relatório atual continua operando.
     </p>
-  {{else if this.evidence}}
+  {{else if this.identityEvidence}}
     <div class="callout secondary text-small" data-test-property-evidence>
-      <strong>GeoSampa — lote {{this.evidence.valueText}}</strong>
-      <div>Status: {{this.evidence.statusLabel}}</div>
-      <div>Fonte: {{this.evidence.snapshot.authority}}</div>
-      <div>Snapshot SHA-256: <code>{{this.evidence.snapshot.sha256}}</code></div>
+      <strong>GeoSampa — lote {{this.identityEvidence.valueText}}</strong>
+      <div>Status: {{this.identityEvidence.statusLabel}}</div>
+      <div>Fonte: {{this.identityEvidence.snapshot.authority}}</div>
+      <div>Snapshot SHA-256: <code>{{this.identityEvidence.snapshot.sha256}}</code></div>
+
+      {{#if this.displayFacts.length}}
+        <dl data-test-property-evidence-facts>
+          {{#each this.displayFacts as |fact|}}
+            <div>
+              <dt><strong>{{fact.label}}</strong></dt>
+              <dd>
+                {{fact.valueText}}{{#if fact.unit}} {{fact.unit}}{{/if}}
+              </dd>
+            </div>
+          {{/each}}
+        </dl>
+      {{/if}}
+
       {{#if this.citation.sourceUrl}}
         <div>
           <a href={{this.citation.sourceUrl}} target="_blank" rel="noopener noreferrer">
@@ -25,7 +39,7 @@
       {{/if}}
     </div>
     <p class="text-small">
-      Esta evidência confirma o identificador cadastral publicado pelo GeoSampa. Não comprova propriedade dominial nem substitui certidão ou matrícula.
+      Estes dados cadastrais foram lidos do snapshot oficial do GeoSampa. Não comprovam propriedade dominial nem substituem certidão ou matrícula.
     </p>
   {{else}}
     <p class="callout secondary text-small" data-test-property-evidence-empty>

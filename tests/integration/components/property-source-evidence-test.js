@@ -12,6 +12,7 @@ class PlatformApiStub extends Service {
     if (filters.subjectId !== '6492402') return [];
     return [
       {
+        evidenceType: 'SP_LOT_IDENTIFIER',
         valueText: '6492402',
         statusLabel: 'Confirmado',
         snapshot: {
@@ -24,6 +25,37 @@ class PlatformApiStub extends Service {
               'https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/ows?request=GetFeature',
           },
         ],
+      },
+      {
+        evidenceType: 'SP_LOT_FISCAL_SECTOR',
+        valueText: '148',
+        statusLabel: 'Confirmado',
+        snapshot: {
+          authority: 'Prefeitura de São Paulo / GeoSampa',
+          sha256: 'f741dc4d',
+        },
+        citations: [],
+      },
+      {
+        evidenceType: 'SP_LOT_FISCAL_BLOCK',
+        valueText: '063',
+        statusLabel: 'Confirmado',
+        snapshot: {
+          authority: 'Prefeitura de São Paulo / GeoSampa',
+          sha256: 'f741dc4d',
+        },
+        citations: [],
+      },
+      {
+        evidenceType: 'SP_LOT_LAND_AREA',
+        valueText: '94',
+        unit: 'm²',
+        statusLabel: 'Confirmado',
+        snapshot: {
+          authority: 'Prefeitura de São Paulo / GeoSampa',
+          sha256: 'f741dc4d',
+        },
+        citations: [],
       },
     ];
   }
@@ -50,16 +82,27 @@ module('Integration | Component | property-source-evidence', function (hooks) {
     assert.deepEqual(service.calls[0], {
       municipalityIbge: '3550308',
       sourceCode: 'PMSP_GEOSAMPA_LOTES',
-      evidenceType: 'SP_LOT_IDENTIFIER',
       subjectType: 'SP_LOT',
       subjectId: '6492402',
       status: 'CONFIRMADO',
-      limit: 1,
+      limit: 25,
     });
     assert.dom('[data-test-property-evidence]').includesText('lote 6492402');
     assert
+      .dom('[data-test-property-evidence-facts]')
+      .includesText('Setor fiscal');
+    assert.dom('[data-test-property-evidence-facts]').includesText('148');
+    assert
+      .dom('[data-test-property-evidence-facts]')
+      .includesText('Quadra fiscal');
+    assert.dom('[data-test-property-evidence-facts]').includesText('063');
+    assert
+      .dom('[data-test-property-evidence-facts]')
+      .includesText('Área do terreno');
+    assert.dom('[data-test-property-evidence-facts]').includesText('94 m²');
+    assert
       .dom('[data-test-property-source-evidence]')
-      .includesText('Não comprova propriedade dominial');
+      .includesText('Não comprovam propriedade dominial');
   });
 
   test('it reloads when the active lot changes and shows an explicit empty state', async function (assert) {
