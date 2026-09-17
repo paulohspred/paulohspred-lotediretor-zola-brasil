@@ -9,7 +9,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "snapshot:parse-html": "tsx src/parse-html-snapshot.ts",
     "snapshot:ingest-geosampa-lot": "tsx src/ingest-geosampa-lot-snapshot.ts",
-    "snapshot:parse-geosampa-lot": "tsx src/parse-geosampa-lot-snapshot.ts"
+    "snapshot:parse-geosampa-lot": "tsx src/parse-geosampa-lot-snapshot.ts",
+    "snapshot:ingest-geosampa-zoning": "tsx src/ingest-geosampa-zoning-snapshot.ts",
+    "snapshot:parse-geosampa-zoning": "tsx src/parse-geosampa-zoning-snapshot.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.888.0",
