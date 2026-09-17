@@ -33,6 +33,7 @@ type EvidenceRecord {
   qualityAssessment: EvidenceQualityAssessment
   recordedAt: String!
   snapshot: EvidenceSnapshot!
+  spatialOverlap: EvidenceSpatialOverlap
   status: EvidenceStatus!
   statusLabel: String!
   subjectId: String
@@ -53,6 +54,12 @@ type EvidenceSnapshot {
   sha256: String!
   sourceCode: String!
   sourcePublishedAt: String
+}
+
+type EvidenceSpatialOverlap {
+  intersectionAreaM2: Float!
+  subjectCoverageRatio: Float!
+  subjectGeometryAreaM2: Float!
 }
 
 enum EvidenceStatus {

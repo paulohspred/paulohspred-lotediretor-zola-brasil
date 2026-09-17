@@ -130,6 +130,21 @@ export class EvidenceProvenanceLink {
 }
 
 @ObjectType()
+export class EvidenceSpatialOverlap {
+  @Field(() => Float)
+  @ApiProperty({ example: 38.197 })
+  intersectionAreaM2!: number;
+
+  @Field(() => Float)
+  @ApiProperty({ example: 40.288 })
+  subjectGeometryAreaM2!: number;
+
+  @Field(() => Float)
+  @ApiProperty({ minimum: 0, maximum: 1, example: 0.9481 })
+  subjectCoverageRatio!: number;
+}
+
+@ObjectType()
 export class EvidenceRecord {
   @Field(() => ID)
   @ApiProperty({ format: 'uuid' })
@@ -186,6 +201,10 @@ export class EvidenceRecord {
   @Field({ nullable: true })
   @ApiPropertyOptional()
   parserVersion?: string;
+
+  @Field(() => EvidenceSpatialOverlap, { nullable: true })
+  @ApiPropertyOptional({ type: () => EvidenceSpatialOverlap })
+  spatialOverlap?: EvidenceSpatialOverlap;
 
   @Field(() => EvidenceSnapshot)
   @ApiProperty({ type: () => EvidenceSnapshot })

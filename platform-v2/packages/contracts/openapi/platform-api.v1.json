@@ -123,6 +123,9 @@
           "snapshot": {
             "$ref": "#/components/schemas/EvidenceSnapshot"
           },
+          "spatialOverlap": {
+            "$ref": "#/components/schemas/EvidenceSpatialOverlap"
+          },
           "status": {
             "enum": [
               "CONFIRMADO",
@@ -221,6 +224,30 @@
           "objectKey",
           "sha256",
           "ingestedAt"
+        ],
+        "type": "object"
+      },
+      "EvidenceSpatialOverlap": {
+        "properties": {
+          "intersectionAreaM2": {
+            "example": 38.197,
+            "type": "number"
+          },
+          "subjectCoverageRatio": {
+            "example": 0.9481,
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "subjectGeometryAreaM2": {
+            "example": 40.288,
+            "type": "number"
+          }
+        },
+        "required": [
+          "intersectionAreaM2",
+          "subjectGeometryAreaM2",
+          "subjectCoverageRatio"
         ],
         "type": "object"
       },

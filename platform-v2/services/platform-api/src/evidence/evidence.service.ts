@@ -7,6 +7,7 @@ import {
   EvidenceQualityAssessment,
   EvidenceRecord,
   EvidenceSnapshot,
+  EvidenceSpatialOverlap,
   EvidenceStatus,
 } from './evidence.types';
 
@@ -35,6 +36,7 @@ type EvidenceRow = {
   recorded_at: Date;
   calculation_method: string | null;
   parser_version: string | null;
+  spatial_overlap: EvidenceSpatialOverlap | null;
   snapshot: EvidenceSnapshot;
   citations: EvidenceCitation[] | null;
   quality_assessment: EvidenceQualityAssessment | null;
@@ -56,6 +58,18 @@ SELECT
   e.recorded_at,
   e.calculation_method,
   e.parser_version,
+  CASE
+    WHEN e.evidence_type = 'SP_LOT_ZONING_INTERSECTION'
+      AND e.metadata ? 'intersectionAreaM2'
+      AND e.metadata ? 'lotGeometryAreaM2'
+      AND e.metadata ? 'shareOfLotGeometry'
+    THEN jsonb_build_object(
+      'intersectionAreaM2', (e.metadata->>'intersectionAreaM2')::double precision,
+      'subjectGeometryAreaM2', (e.metadata->>'lotGeometryAreaM2')::double precision,
+      'subjectCoverageRatio', (e.metadata->>'shareOfLotGeometry')::double precision
+    )
+    ELSE NULL
+  END AS spatial_overlap,
   jsonb_build_object(
     'id', ss.id::text,
     'sourceCode', sr.source_code,
@@ -180,6 +194,7 @@ export class EvidenceService {
       recordedAt: row.recorded_at.toISOString(),
       calculationMethod: row.calculation_method ?? undefined,
       parserVersion: row.parser_version ?? undefined,
+      spatialOverlap: row.spatial_overlap ?? undefined,
       snapshot: row.snapshot,
       citations: row.citations ?? [],
       qualityAssessment: row.quality_assessment ?? undefined,

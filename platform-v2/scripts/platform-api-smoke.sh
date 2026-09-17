@@ -74,12 +74,17 @@ for row in rows:
     assert row['snapshot']['sourceCode'], row
     assert isinstance(row['citations'], list), row
     assert isinstance(row['provenance'], list), row
+    overlap=row.get('spatialOverlap')
+    if overlap is not None:
+        assert isinstance(overlap.get('intersectionAreaM2'), (int,float)), row
+        assert isinstance(overlap.get('subjectGeometryAreaM2'), (int,float)), row
+        assert 0 <= overlap.get('subjectCoverageRatio', -1) <= 1, row
 PY
 
 test "$(curl -sS -o /tmp/ld-api-evidence-notfound -w '%{http_code}' http://127.0.0.1:54000/api/v1/evidence/00000000-0000-0000-0000-000000000000)" = 404
 
 curl -fsS -H 'content-type: application/json' \
-  --data '{"query":"query { evidence(municipalityIbge: \"3550308\", subjectType: \"SP_LOT\", subjectId: \"123456789\", limit: 10) { id evidenceType subjectType subjectId status statusLabel snapshot { sourceCode datasetCode } citations { id } provenance { id relationType parentEvidenceId } } }"}' \
+  --data '{"query":"query { evidence(municipalityIbge: \"3550308\", subjectType: \"SP_LOT\", subjectId: \"123456789\", limit: 10) { id evidenceType subjectType subjectId status statusLabel snapshot { sourceCode datasetCode } citations { id } provenance { id relationType parentEvidenceId } spatialOverlap { intersectionAreaM2 subjectGeometryAreaM2 subjectCoverageRatio } } }"}' \
   http://127.0.0.1:54000/graphql >/tmp/ld-api-evidence-graphql.json
 python3 - <<'PY'
 import json
@@ -113,6 +118,9 @@ schemas=j.get('components',{}).get('schemas',{})
 assert 'SourceRegistryEntry' in schemas, j.get('components')
 assert 'SourceSnapshotRecord' in schemas, j.get('components')
 assert 'EvidenceRecord' in schemas, j.get('components')
+assert 'EvidenceSpatialOverlap' in schemas, j.get('components')
+overlap=schemas['EvidenceRecord']['properties'].get('spatialOverlap', {})
+assert overlap.get('allOf') or overlap.get('$ref'), overlap
 PY
 
 curl -fsS -D /tmp/ld-api-headers -o /dev/null http://127.0.0.1:54000/api/v1/health
