@@ -5,7 +5,7 @@ import { Pool, PoolClient } from 'pg';
 const CONNECTOR_VERSION = 'geosampa-territorial-wfs-v1';
 const SUBJECT_TYPE = 'SP_LOT';
 
-type LayerKey = 'macrozona' | 'macroarea';
+type LayerKey = 'macrozona' | 'macroarea' | 'risco_hidrologico';
 
 type LayerDefinition = {
   typeName: string;
@@ -30,6 +30,18 @@ const LAYERS: Record<LayerKey, LayerDefinition> = {
       'sg_macroarea',
       'nm_macroarea',
       'dt_atualizacao',
+      'ge_poligono',
+    ],
+  },
+  risco_hidrologico: {
+    typeName: 'geoportal:risco_hidrologico',
+    propertyNames: [
+      'cd_identificador_risco_hidrologico',
+      'nm_area_risco_hidrologico',
+      'tx_grau_risco_hidrologico',
+      'tx_tipo_processo',
+      'nm_bacia_hidrografica',
+      'dt_vistoria',
       'ge_poligono',
     ],
   },
@@ -96,8 +108,14 @@ function parseOptions(): CliOptions {
     throw new Error('Missing or invalid --lot-id; expected digits only');
   }
   const layerKey = readArg('layer-key');
-  if (layerKey !== 'macrozona' && layerKey !== 'macroarea') {
-    throw new Error('Missing or invalid --layer-key; expected macrozona or macroarea');
+  if (
+    layerKey !== 'macrozona' &&
+    layerKey !== 'macroarea' &&
+    layerKey !== 'risco_hidrologico'
+  ) {
+    throw new Error(
+      'Missing or invalid --layer-key; expected macrozona, macroarea, or risco_hidrologico',
+    );
   }
   return {
     sourceCode: readArg('source-code') ?? 'PMSP_GEOSAMPA_TERRITORIAL',

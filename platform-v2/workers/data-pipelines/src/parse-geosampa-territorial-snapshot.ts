@@ -6,7 +6,7 @@ const SUBJECT_TYPE = 'SP_LOT';
 const CALCULATION_METHOD =
   'PostGIS ST_Intersection on EPSG:4326 versioned lot and territorial geometries; positive 2D overlap only';
 
-type LayerKey = 'macrozona' | 'macroarea';
+type LayerKey = 'macrozona' | 'macroarea' | 'risco_hidrologico';
 
 type LayerDefinition = {
   evidenceType: string;
@@ -15,6 +15,7 @@ type LayerDefinition = {
   nameProperties: string[];
   updatedAtProperty?: string;
   citationTitle: string;
+  metadataProperties?: string[];
 };
 
 const LAYERS: Record<LayerKey, LayerDefinition> = {
@@ -33,6 +34,22 @@ const LAYERS: Record<LayerKey, LayerDefinition> = {
     updatedAtProperty: 'dt_atualizacao',
     citationTitle: 'GeoSampa — pde_macroarea_lei_18209',
   },
+  risco_hidrologico: {
+    evidenceType: 'SP_LOT_HYDROLOGICAL_RISK_INTERSECTION',
+    parserVersion: 'geosampa-hydrological-risk-intersection-v1',
+    codeProperty: 'tx_grau_risco_hidrologico',
+    nameProperties: ['tx_tipo_processo'],
+    updatedAtProperty: 'dt_vistoria',
+    citationTitle: 'GeoSampa — risco_hidrologico',
+    metadataProperties: [
+      'cd_identificador_risco_hidrologico',
+      'nm_area_risco_hidrologico',
+      'tx_grau_risco_hidrologico',
+      'tx_tipo_processo',
+      'nm_bacia_hidrografica',
+      'dt_vistoria',
+    ],
+  },
 };
 
 type TerritorialCandidate = {
@@ -42,6 +59,7 @@ type TerritorialCandidate = {
   name: string | null;
   updatedAt: string | null;
   locator: string;
+  sourceProperties: Record<string, string | null>;
 };
 
 type IntersectionMetrics = {
@@ -139,6 +157,9 @@ function extractCandidates(
       value === null || value === undefined || value === '' ? null : String(value);
     const name = layer.nameProperties.map((key) => text(properties[key])).find(Boolean) ?? null;
     const updatedAt = layer.updatedAtProperty ? text(properties[layer.updatedAtProperty]) : null;
+    const sourceProperties = Object.fromEntries(
+      (layer.metadataProperties ?? []).map((key) => [key, text(properties[key])]),
+    );
     return {
       featureId,
       geometry,
@@ -146,6 +167,7 @@ function extractCandidates(
       name,
       updatedAt,
       locator: `feature:${featureId}.properties.${layer.codeProperty}`,
+      sourceProperties,
     };
   });
 }
@@ -249,6 +271,7 @@ async function persistEvidence(
             territorialFeatureId: candidate.featureId,
             featureName: candidate.name,
             sourceUpdatedAt: candidate.updatedAt,
+            sourceProperties: candidate.sourceProperties,
             lotGeometryEvidenceId,
             intersectionAreaM2: metrics.intersectionAreaM2,
             lotGeometryAreaM2: metrics.lotGeometryAreaM2,
@@ -339,7 +362,11 @@ async function main(): Promise<void> {
       throw new Error(`Snapshot ${snapshotId} is missing lotGeometryEvidenceId metadata`);
     }
     const layerKey = metadataText(snapshot, 'layerKey');
-    if (layerKey !== 'macrozona' && layerKey !== 'macroarea') {
+    if (
+      layerKey !== 'macrozona' &&
+      layerKey !== 'macroarea' &&
+      layerKey !== 'risco_hidrologico'
+    ) {
       throw new Error(`Snapshot ${snapshotId} has unsupported layerKey metadata`);
     }
     const layer = LAYERS[layerKey];

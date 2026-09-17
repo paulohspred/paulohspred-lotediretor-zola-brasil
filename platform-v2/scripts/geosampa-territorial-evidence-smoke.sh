@@ -53,6 +53,11 @@ class Handler(BaseHTTPRequestHandler):
                 {'type':'Feature','id':'pde_macroarea_lei_18209.1','geometry':OVERLAP,'properties':{'cd_identificador_pde_macroarea_lei_18209':1,'sg_macroarea':'MQU','nm_macroarea':'Macroarea de Qualificacao da Urbanizacao','dt_atualizacao':'2025-03-27Z'}},
                 {'type':'Feature','id':'pde_macroarea_lei_18209.2','geometry':OUTSIDE,'properties':{'cd_identificador_pde_macroarea_lei_18209':2,'sg_macroarea':'MEM','nm_macroarea':'Macroarea de Estruturacao Metropolitana','dt_atualizacao':'2025-03-27Z'}}
             ]
+        elif type_name.endswith('risco_hidrologico'):
+            features=[
+                {'type':'Feature','id':'risco_hidrologico.427','geometry':OVERLAP,'properties':{'cd_identificador_risco_hidrologico':427,'nm_area_risco_hidrologico':'ARRAIAS DO ARAGUAIA','tx_grau_risco_hidrologico':'R1','tx_tipo_processo':'ALAGAMENTO','nm_bacia_hidrografica':'RIO ARICANDUVA','dt_vistoria':'2022-03-31Z'}},
+                {'type':'Feature','id':'risco_hidrologico.999','geometry':OUTSIDE,'properties':{'cd_identificador_risco_hidrologico':999,'nm_area_risco_hidrologico':'FORA DO LOTE','tx_grau_risco_hidrologico':'R2','tx_tipo_processo':'INUNDACAO','nm_bacia_hidrografica':'RIO TESTE','dt_vistoria':'2022-04-01Z'}}
+            ]
         else:
             features=[]
         body=json.dumps({'type':'FeatureCollection','features':features,'numberMatched':len(features),'numberReturned':len(features),'timeStamp':datetime.now(timezone.utc).isoformat()},separators=(',',':'),ensure_ascii=False).encode()
@@ -132,11 +137,15 @@ PY
 
 run_layer macrozona MZURB SP_LOT_MACROZONA_INTERSECTION
 run_layer macroarea MQU SP_LOT_MACROAREA_INTERSECTION
+run_layer risco_hidrologico R1 SP_LOT_HYDROLOGICAL_RISK_INTERSECTION
 
-COUNTS="$("${COMPOSE[@]}" exec -T postgres psql -U lotediretor -d lotediretor_platform -Atc "SELECT (SELECT count(*) FROM core.source_snapshot ss JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${TERRITORIAL_SOURCE}') || ':' || (SELECT count(*) FROM evidence.evidence e JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${TERRITORIAL_SOURCE}' AND e.evidence_type IN ('SP_LOT_MACROZONA_INTERSECTION','SP_LOT_MACROAREA_INTERSECTION')) || ':' || (SELECT count(*) FROM evidence.citation c JOIN evidence.evidence e ON e.id=c.evidence_id JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${TERRITORIAL_SOURCE}') || ':' || (SELECT count(*) FROM evidence.provenance_link p JOIN evidence.evidence e ON e.id=p.evidence_id JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${TERRITORIAL_SOURCE}' AND p.relation_type='SPATIAL_INTERSECTION_INPUT');")"
-test "$COUNTS" = '2:2:2:2'
+COUNTS="$("${COMPOSE[@]}" exec -T postgres psql -U lotediretor -d lotediretor_platform -Atc "SELECT (SELECT count(*) FROM core.source_snapshot ss JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${TERRITORIAL_SOURCE}') || ':' || (SELECT count(*) FROM evidence.evidence e JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${TERRITORIAL_SOURCE}' AND e.evidence_type IN ('SP_LOT_MACROZONA_INTERSECTION','SP_LOT_MACROAREA_INTERSECTION','SP_LOT_HYDROLOGICAL_RISK_INTERSECTION')) || ':' || (SELECT count(*) FROM evidence.citation c JOIN evidence.evidence e ON e.id=c.evidence_id JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${TERRITORIAL_SOURCE}') || ':' || (SELECT count(*) FROM evidence.provenance_link p JOIN evidence.evidence e ON e.id=p.evidence_id JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${TERRITORIAL_SOURCE}' AND p.relation_type='SPATIAL_INTERSECTION_INPUT');")"
+test "$COUNTS" = '3:3:3:3'
 
-COVERAGE="$("${COMPOSE[@]}" exec -T postgres psql -U lotediretor -d lotediretor_platform -Atc "SELECT string_agg(e.value_text || ':' || round((e.metadata->>'shareOfLotGeometry')::numeric,4)::text, ',' ORDER BY e.value_text) FROM evidence.evidence e JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${TERRITORIAL_SOURCE}' AND e.evidence_type IN ('SP_LOT_MACROZONA_INTERSECTION','SP_LOT_MACROAREA_INTERSECTION');")"
-test "$COVERAGE" = 'MQU:1.0000,MZURB:1.0000'
+COVERAGE="$("${COMPOSE[@]}" exec -T postgres psql -U lotediretor -d lotediretor_platform -Atc "SELECT string_agg(e.value_text || ':' || round((e.metadata->>'shareOfLotGeometry')::numeric,4)::text, ',' ORDER BY e.value_text) FROM evidence.evidence e JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${TERRITORIAL_SOURCE}' AND e.evidence_type IN ('SP_LOT_MACROZONA_INTERSECTION','SP_LOT_MACROAREA_INTERSECTION','SP_LOT_HYDROLOGICAL_RISK_INTERSECTION');")"
+test "$COVERAGE" = 'MQU:1.0000,MZURB:1.0000,R1:1.0000'
 
-echo 'geosampa-territorial-evidence-smoke=OK layers=macrozona,macroarea semantic-idempotency=OK exact-overlap=OK provenance=OK'
+RISK_META="$("${COMPOSE[@]}" exec -T postgres psql -U lotediretor -d lotediretor_platform -Atc "SELECT (e.metadata #>> '{sourceProperties,nm_bacia_hidrografica}') || ':' || (e.metadata #>> '{sourceProperties,nm_area_risco_hidrologico}') FROM evidence.evidence e JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${TERRITORIAL_SOURCE}' AND e.evidence_type='SP_LOT_HYDROLOGICAL_RISK_INTERSECTION';")"
+test "$RISK_META" = 'RIO ARICANDUVA:ARRAIAS DO ARAGUAIA'
+
+echo 'geosampa-territorial-evidence-smoke=OK layers=macrozona,macroarea,risco_hidrologico semantic-idempotency=OK exact-overlap=OK provenance=OK source-metadata=OK'
