@@ -3,6 +3,30 @@ import { action } from '@ember/object';
 import { inject as service } from '@ember/service';
 import { tracked } from '@glimmer/tracking';
 
+function formatNumber(value, maximumFractionDigits) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return null;
+  return number.toLocaleString('pt-BR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits,
+  });
+}
+
+function presentSpatialOverlap(overlap) {
+  if (!overlap) return null;
+  const intersectionArea = formatNumber(overlap.intersectionAreaM2, 3);
+  const subjectArea = formatNumber(overlap.subjectGeometryAreaM2, 3);
+  const ratio = Number(overlap.subjectCoverageRatio);
+  if (!intersectionArea || !subjectArea || !Number.isFinite(ratio)) return null;
+  const coverage = formatNumber(ratio * 100, 2);
+  if (!coverage) return null;
+  return {
+    intersectionAreaLabel: `${intersectionArea} m²`,
+    subjectGeometryAreaLabel: `${subjectArea} m²`,
+    coverageLabel: `${coverage}%`,
+  };
+}
+
 export default class ZoningSourceEvidenceComponent extends Component {
   @service platformApi;
 
@@ -41,6 +65,7 @@ export default class ZoningSourceEvidenceComponent extends Component {
         this.evidenceRows = rows.map((row) => ({
           ...row,
           citation: row.citations?.[0] || null,
+          spatialOverlapPresentation: presentSpatialOverlap(row.spatialOverlap),
         }));
       }
     } catch (error) {

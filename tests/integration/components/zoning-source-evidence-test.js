@@ -15,6 +15,11 @@ class PlatformApiStub extends Service {
         valueText: 'ZEIS-1',
         statusLabel: 'Calculado',
         calculationMethod: 'PostGIS ST_Intersection over versioned geometries',
+        spatialOverlap: {
+          intersectionAreaM2: 38.197,
+          subjectGeometryAreaM2: 40.288,
+          subjectCoverageRatio: 0.9481,
+        },
         snapshot: {
           authority: 'Prefeitura de São Paulo / GeoSampa',
           sha256: 'zone-sha-123',
@@ -25,6 +30,11 @@ class PlatformApiStub extends Service {
         valueText: 'ZPI-1',
         statusLabel: 'Calculado',
         calculationMethod: 'PostGIS ST_Intersection over versioned geometries',
+        spatialOverlap: {
+          intersectionAreaM2: 1.975,
+          subjectGeometryAreaM2: 40.288,
+          subjectCoverageRatio: 0.049,
+        },
         snapshot: {
           authority: 'Prefeitura de São Paulo / GeoSampa',
           sha256: 'zone-sha-123',
@@ -62,6 +72,11 @@ module('Integration | Component | zoning-source-evidence', function (hooks) {
     assert.dom('[data-test-zoning-evidence]').includesText('ZEIS-1');
     assert.dom('[data-test-zoning-evidence]').includesText('ZPI-1');
     assert.dom('[data-test-zoning-evidence]').includesText('Calculado');
+    assert.dom('[data-test-zoning-overlap-coverage]').exists({ count: 2 });
+    assert.dom('[data-test-zoning-evidence]').includesText('94,81%');
+    assert.dom('[data-test-zoning-evidence]').includesText('38,197 m²');
+    assert.dom('[data-test-zoning-evidence]').includesText('4,9%');
+    assert.dom('[data-test-zoning-evidence]').includesText('1,975 m²');
     assert
       .dom('[data-test-zoning-source-evidence]')
       .includesText('não determina, isoladamente, o enquadramento jurídico');

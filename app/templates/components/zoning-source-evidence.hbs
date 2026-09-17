@@ -18,6 +18,14 @@
           <div>Status: {{evidence.statusLabel}}</div>
           <div>Fonte: {{evidence.snapshot.authority}}</div>
           <div>Snapshot SHA-256: <code>{{evidence.snapshot.sha256}}</code></div>
+          {{#if evidence.spatialOverlapPresentation}}
+            <div data-test-zoning-overlap-coverage>
+              Cobertura da geometria do lote: <strong>{{evidence.spatialOverlapPresentation.coverageLabel}}</strong>
+            </div>
+            <div data-test-zoning-overlap-area>
+              Área de sobreposição: {{evidence.spatialOverlapPresentation.intersectionAreaLabel}} / {{evidence.spatialOverlapPresentation.subjectGeometryAreaLabel}}
+            </div>
+          {{/if}}
           {{#if evidence.calculationMethod}}
             <div>Método: <code>{{evidence.calculationMethod}}</code></div>
           {{/if}}
