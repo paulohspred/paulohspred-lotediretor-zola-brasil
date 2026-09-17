@@ -25,3 +25,15 @@ docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.
 ```
 
 Parâmetros opcionais: `--endpoint-type`, `--timeout-ms` e `--max-bytes`. Endpoints `POST` são rejeitados até existir um conector específico que conheça seus parâmetros e semântica.
+
+## HTML snapshot → Evidence
+
+O parser `html-metadata-v1` lê um snapshot `text/html` diretamente do bucket, recalcula o SHA-256 e aborta se os bytes divergirem do hash registrado. Ele extrai somente o `<title>` do documento e grava evidência factual `SOURCE_DOCUMENT_TITLE` com status `CONFIRMADO` e citação `html:title`; não interpreta parâmetros legais.
+
+```sh
+docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example \
+  --profile ingest run --rm --entrypoint node data-pipelines \
+  workers/data-pipelines/dist/parse-html-snapshot.js --snapshot-id <UUID>
+```
+
+A criação é idempotente por identidade lógica protegida com advisory lock transacional.

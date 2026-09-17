@@ -11,7 +11,7 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 | Etapa | Blueprint | Estado atual | Próximo gate |
 |---|---|---|---|
 | 0 | Fundação | **PARCIAL / RUNTIME + PLATFORM API PROVADOS** | Auth/realm Keycloak, tenant context, app shells e promoção para staging |
-| 1 | Core territorial | **PARCIAL / SP FORTE + SNAPSHOT INGEST + EVIDENCE API** | parsers/evidências reais, IBGE nacional, Parcel Resolver genérico, MVT temático e relatório v1 por API |
+| 1 | Core territorial | **PARCIAL / SP FORTE + SNAPSHOT INGEST + EVIDENCE PIPELINE** | parsers jurídicos/territoriais específicos, IBGE nacional, Parcel Resolver genérico, MVT temático e relatório v1 por API |
 | 2 | UX cliente | **PARCIAL / ZOLA MODULAR SHELL** | ligar módulos ao novo core preservando mapa, busca, camadas e fluxos existentes |
 | 3 | Imóvel 360 | **PARCIAL / SHELL + IMÓVEL ATIVO** | migrar progressivamente o relatório territorial para contratos/evidências da Platform API |
 | 4 | RE Rural | **NÃO INICIADA** | CAR/SIGEF/SNCR/CIB/IBAMA/INPE + overlaps/monitoring |
@@ -42,7 +42,7 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 - PostgreSQL/PostGIS v2 com schemas do Blueprint e migrations versionadas.
 - `core.source_registry`, endpoint, licença, cobertura e health.
 - Source Snapshot API read-only + worker de ingestão GET idempotente, hash SHA-256 e objeto content-addressed no MinIO; primeiro snapshot oficial LPUOS comprovado em desenvolvimento. Faltam conectores específicos, retenção WORM de produção e automação por eventos/agendamento.
-- Evidence API read-only: snapshot/fonte, hash, parser version, vigência, citações, qualidade e proveniência; falta ingestão real e modelagem explícita de conflitos.
+- Evidence API read-only + primeiro parser factual HTML (`SOURCE_DOCUMENT_TITLE`) com verificação do SHA do snapshot, citação e idempotência; primeira evidência oficial LPUOS comprovada em desenvolvimento. Faltam parsers jurídicos/territoriais específicos, quality assessments automáticos e modelagem explícita de conflitos.
 - Object storage imutável para artefatos brutos e relatórios.
 - Valkey para cache/locks; NATS JetStream para eventos; OpenSearch para busca documental.
 - Martin MVT sobre views seguras.

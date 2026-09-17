@@ -37,6 +37,18 @@ A chave do objeto é `raw/<sourceCode>/<sha256>`. Antes do upload o worker verif
 - o worker não interpreta conteúdo nem gera evidência; parsing/evidence é uma etapa posterior;
 - a chave content-addressed evita sobrescrita pela aplicação, mas o bucket de desenvolvimento ainda não é WORM/Object Lock. Retenção imutável de produção deve ser configurada antes de staging/produção.
 
+## Gerar evidência factual de HTML
+
+Para snapshots `text/html`, o parser `html-metadata-v1` recalcula o SHA-256 do objeto antes de ler o conteúdo e extrai somente o título do documento:
+
+```sh
+docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example \
+  --profile ingest run --rm --entrypoint node data-pipelines \
+  workers/data-pipelines/dist/parse-html-snapshot.js --snapshot-id <UUID>
+```
+
+O resultado é `SOURCE_DOCUMENT_TITLE`, `CONFIRMADO`, locator `html:title`, com citação da URL de origem. O parser não transforma texto legal em parâmetro urbanístico.
+
 ## Validação
 
 ```sh
