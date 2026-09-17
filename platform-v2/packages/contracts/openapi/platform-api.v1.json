@@ -1,6 +1,221 @@
 {
   "components": {
     "schemas": {
+      "EvidenceCitation": {
+        "properties": {
+          "documentTitle": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "quotedText": {
+            "type": "string"
+          },
+          "sourceLocator": {
+            "type": "string"
+          },
+          "sourceUrl": {
+            "format": "uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "EvidenceProvenanceLink": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "parentEvidenceId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "relationType": {
+            "example": "DERIVED_FROM",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "relationType"
+        ],
+        "type": "object"
+      },
+      "EvidenceQualityAssessment": {
+        "properties": {
+          "assessedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "confidence": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "geometryQuality": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "sourceQuality": {
+            "type": "string"
+          },
+          "temporalQuality": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "assessedAt"
+        ],
+        "type": "object"
+      },
+      "EvidenceRecord": {
+        "properties": {
+          "calculationMethod": {
+            "type": "string"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceCitation"
+            },
+            "type": "array"
+          },
+          "evidenceType": {
+            "example": "ZONEAMENTO",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "locator": {
+            "example": "SQL:001.002.0003-1",
+            "type": "string"
+          },
+          "parserVersion": {
+            "type": "string"
+          },
+          "provenance": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceProvenanceLink"
+            },
+            "type": "array"
+          },
+          "qualityAssessment": {
+            "$ref": "#/components/schemas/EvidenceQualityAssessment"
+          },
+          "recordedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/EvidenceSnapshot"
+          },
+          "status": {
+            "enum": [
+              "CONFIRMADO",
+              "CALCULADO",
+              "INFERIDO",
+              "PENDENTE",
+              "CONFLITANTE",
+              "NAO_DISPONIVEL"
+            ],
+            "type": "string"
+          },
+          "statusLabel": {
+            "example": "Confirmado",
+            "type": "string"
+          },
+          "unit": {
+            "example": "m²",
+            "type": "string"
+          },
+          "validFrom": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "validTo": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "valueText": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "evidenceType",
+          "status",
+          "statusLabel",
+          "recordedAt",
+          "snapshot",
+          "citations",
+          "provenance"
+        ],
+        "type": "object"
+      },
+      "EvidenceSnapshot": {
+        "properties": {
+          "authority": {
+            "example": "Prefeitura de São Paulo / GeoSampa",
+            "type": "string"
+          },
+          "datasetCode": {
+            "example": "LOTE_FISCAL",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "ingestedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "objectKey": {
+            "example": "snapshots/geosampa/lotes/2026-09-17.geojson",
+            "type": "string"
+          },
+          "parserVersion": {
+            "example": "geosampa-lote-v1",
+            "type": "string"
+          },
+          "sha256": {
+            "example": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            "type": "string"
+          },
+          "sourceCode": {
+            "example": "PMSP_GEOSAMPA_LOTES",
+            "type": "string"
+          },
+          "sourcePublishedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "sourceCode",
+          "datasetCode",
+          "authority",
+          "objectKey",
+          "sha256",
+          "ingestedAt"
+        ],
+        "type": "object"
+      },
       "SourceEndpoint": {
         "properties": {
           "method": {
@@ -116,6 +331,127 @@
   },
   "openapi": "3.0.0",
   "paths": {
+    "/api/v1/evidence": {
+      "get": {
+        "operationId": "EvidenceController_list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "municipalityIbge",
+            "required": false,
+            "schema": {
+              "example": "3550308",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sourceCode",
+            "required": false,
+            "schema": {
+              "example": "PMSP_GEOSAMPA_LOTES",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "evidenceType",
+            "required": false,
+            "schema": {
+              "example": "ZONEAMENTO",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "locator",
+            "required": false,
+            "schema": {
+              "example": "SQL:001.002.0003-1",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "CONFIRMADO",
+                "CALCULADO",
+                "INFERIDO",
+                "PENDENTE",
+                "CONFLITANTE",
+                "NAO_DISPONIVEL"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "example": 100,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EvidenceRecord"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Evidence records"
+          }
+        },
+        "summary": "List evidence with source, citation, quality, and provenance context",
+        "tags": [
+          "evidence"
+        ]
+      }
+    },
+    "/api/v1/evidence/{id}": {
+      "get": {
+        "operationId": "EvidenceController_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceRecord"
+                }
+              }
+            },
+            "description": "Evidence record"
+          },
+          "404": {
+            "description": "Evidence not found"
+          }
+        },
+        "summary": "Get one evidence record with provenance context",
+        "tags": [
+          "evidence"
+        ]
+      }
+    },
     "/api/v1/health": {
       "get": {
         "operationId": "HealthController_health",

@@ -11,9 +11,9 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 | Etapa | Blueprint | Estado atual | Próximo gate |
 |---|---|---|---|
 | 0 | Fundação | **PARCIAL / RUNTIME + PLATFORM API PROVADOS** | Auth/realm Keycloak, tenant context, app shells e promoção para staging |
-| 1 | Core territorial | **PARCIAL / SP FORTE + SOURCE REGISTRY API** | IBGE nacional, evidence lineage, Parcel Resolver genérico, MVT temático e relatório v1 por API |
-| 2 | UX cliente | **PARCIAL / LEGACY ZOLA** | Next.js site/login/client shell e migração progressiva do Explorer/mapa |
-| 3 | Imóvel 360 | **NÃO INICIADA** | property/development/explorer/market/CRM/AVM contracts e telas |
+| 1 | Core territorial | **PARCIAL / SP FORTE + SOURCE REGISTRY + EVIDENCE API** | ingestão real de snapshots/evidências, IBGE nacional, Parcel Resolver genérico, MVT temático e relatório v1 por API |
+| 2 | UX cliente | **PARCIAL / ZOLA MODULAR SHELL** | ligar módulos ao novo core preservando mapa, busca, camadas e fluxos existentes |
+| 3 | Imóvel 360 | **PARCIAL / SHELL + IMÓVEL ATIVO** | migrar progressivamente o relatório territorial para contratos/evidências da Platform API |
 | 4 | RE Rural | **NÃO INICIADA** | CAR/SIGEF/SNCR/CIB/IBAMA/INPE + overlaps/monitoring |
 | 5 | AI Core | **NÃO INICIADA** | AI Gateway, ingestão, OpenSearch híbrido, A.I Cidades, tools e evals |
 | 6 | Condomínio | **NÃO INICIADA** | upload privado, regras/atas, A.I Condomínio, dashboard/relatório |
@@ -41,7 +41,7 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 ### Fundação / Data Plane
 - PostgreSQL/PostGIS v2 com schemas do Blueprint e migrations versionadas.
 - `core.source_registry`, endpoint, licença, cobertura, snapshot e health.
-- Evidence lineage: source snapshot, hash, parser version, data de consulta/vigência.
+- Evidence API read-only: snapshot/fonte, hash, parser version, vigência, citações, qualidade e proveniência; falta ingestão real e modelagem explícita de conflitos.
 - Object storage imutável para artefatos brutos e relatórios.
 - Valkey para cache/locks; NATS JetStream para eventos; OpenSearch para busca documental.
 - Martin MVT sobre views seguras.
@@ -62,8 +62,8 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 - relatório com status CONFIRMADO/CALCULADO/INFERIDO/PENDENTE/CONFLITANTE/NÃO DISPONÍVEL.
 
 ### Produto
-- site institucional, login e client shell Next.js.
-- migração das funções validadas do ZoLa para MapLibre/deck.gl.
+- shell modular no ZoLa com contexto global de imóvel ativo.
+- migração incremental das funções validadas para os novos contratos, sem reescrever ou substituir o mapa antes de paridade funcional.
 - Imóvel 360, RE Rural, Condomínio, Solar, A.I TEC e Prefeitura.
 - AI Core com A.I Cidades/A.I Condomínio/A.I TEC e evals.
 - Control Plane Admin + billing/CMS/support/releases.
@@ -86,6 +86,6 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 1. Fundação v2 e contratos.
 2. Source Registry + evidence + primeiro PostGIS.
 3. Migrar São Paulo para o novo core sem desligar ZoLa.
-4. Next.js client shell + MapLibre, consumindo o mesmo core.
-5. Paridade funcional São Paulo; só então retirar dependências legacy.
+4. Conectar o shell modular atual ao novo core, mantendo mapa e fluxos validados.
+5. Paridade funcional São Paulo; só então retirar dependências legacy comprovadamente substituídas.
 6. Expandir etapas 3–11 na ordem do Blueprint.

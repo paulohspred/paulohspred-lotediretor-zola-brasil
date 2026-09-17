@@ -1,4 +1,70 @@
+type EvidenceCitation {
+  documentTitle: String
+  id: ID!
+  quotedText: String
+  sourceLocator: String
+  sourceUrl: String
+}
+
+type EvidenceProvenanceLink {
+  id: ID!
+  parentEvidenceId: ID
+  relationType: String!
+}
+
+type EvidenceQualityAssessment {
+  assessedAt: String!
+  confidence: Float
+  geometryQuality: String
+  id: ID!
+  notes: String
+  sourceQuality: String
+  temporalQuality: String
+}
+
+type EvidenceRecord {
+  calculationMethod: String
+  citations: [EvidenceCitation!]!
+  evidenceType: String!
+  id: ID!
+  locator: String
+  parserVersion: String
+  provenance: [EvidenceProvenanceLink!]!
+  qualityAssessment: EvidenceQualityAssessment
+  recordedAt: String!
+  snapshot: EvidenceSnapshot!
+  status: EvidenceStatus!
+  statusLabel: String!
+  unit: String
+  validFrom: String
+  validTo: String
+  valueText: String
+}
+
+type EvidenceSnapshot {
+  authority: String!
+  datasetCode: String!
+  id: ID!
+  ingestedAt: String!
+  objectKey: String!
+  parserVersion: String
+  sha256: String!
+  sourceCode: String!
+  sourcePublishedAt: String
+}
+
+enum EvidenceStatus {
+  CALCULADO
+  CONFIRMADO
+  CONFLITANTE
+  INFERIDO
+  NAO_DISPONIVEL
+  PENDENTE
+}
+
 type Query {
+  evidence(evidenceType: String, limit: Int, locator: String, municipalityIbge: String, sourceCode: String, status: EvidenceStatus): [EvidenceRecord!]!
+  evidenceById(id: String!): EvidenceRecord
   source(municipalityIbge: String, sourceCode: String!): SourceRegistryEntry
   sources(municipalityIbge: String): [SourceRegistryEntry!]!
 }
