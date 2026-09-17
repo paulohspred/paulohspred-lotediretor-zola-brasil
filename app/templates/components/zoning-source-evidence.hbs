@@ -1,0 +1,44 @@
+<section
+  data-test-zoning-source-evidence
+  {{did-insert this.load}}
+  {{did-update this.load @propertyId}}
+>
+  <h3 class="header-medium">Sobreposição de zoneamento versionada</h3>
+  {{#if this.loading}}
+    <p class="text-small">Calculando evidências territoriais disponíveis…</p>
+  {{else if this.errorMessage}}
+    <p class="callout warning text-small" data-test-zoning-evidence-error>
+      A evidência de zoneamento está temporariamente indisponível. O mapa e as demais informações continuam operando.
+    </p>
+  {{else if this.evidenceRows.length}}
+    <div class="callout secondary text-small" data-test-zoning-evidence>
+      {{#each this.evidenceRows as |evidence|}}
+        <div data-test-zoning-evidence-row>
+          <strong>{{evidence.valueText}}</strong>
+          <div>Status: {{evidence.statusLabel}}</div>
+          <div>Fonte: {{evidence.snapshot.authority}}</div>
+          <div>Snapshot SHA-256: <code>{{evidence.snapshot.sha256}}</code></div>
+          {{#if evidence.calculationMethod}}
+            <div>Método: <code>{{evidence.calculationMethod}}</code></div>
+          {{/if}}
+          {{#if evidence.citation.sourceUrl}}
+            <div>
+              <a href={{evidence.citation.sourceUrl}} target="_blank" rel="noopener noreferrer">
+                Abrir consulta oficial capturada
+              </a>
+            </div>
+          {{/if}}
+        </div>
+      {{/each}}
+    </div>
+    <p class="text-small">O resultado indica sobreposição geométrica calculada entre a geometria versionada do lote e sua camada oficial de zoneamento. Ele não determina, isoladamente, o enquadramento jurídico nem os parâmetros construtivos aplicáveis.</p>
+  {{else if @propertyId}}
+    <p class="callout secondary text-small" data-test-zoning-evidence-empty>
+      Ainda não há sobreposição de zoneamento versionada para este imóvel.
+    </p>
+  {{else}}
+    <p class="callout secondary text-small" data-test-zoning-evidence-no-property>
+      Selecione um imóvel para consultar a sobreposição de zoneamento versionada.
+    </p>
+  {{/if}}
+</section>
