@@ -1,0 +1,37 @@
+<div class="content-close-button-container">
+  <LinkTo @route="index" class="close-button" data-test-module-close-button>
+    <span aria-hidden="true">&times;</span>
+  </LinkTo>
+</div>
+<div class="content-area cell large-5 large-cell-block-y xxlarge-4" data-test-module-shell>
+  <h1 class="header-large">{{@title}}</h1>
+  {{#if @description}}
+    <p class="lead">{{@description}}</p>
+  {{/if}}
+
+  {{#unless @hideActiveProperty}}
+    {{#if this.activeProperty.isActive}}
+      <div class="callout secondary text-small" data-test-active-property-context>
+        <strong>Imóvel ativo</strong>
+        <div>
+          <LinkTo @route="map-feature.sp-lot" @model={{this.activeProperty.id}}>
+            {{#if this.activeProperty.title}}
+              {{this.activeProperty.title}}
+            {{else}}
+              Imóvel {{this.activeProperty.id}}
+            {{/if}}
+          </LinkTo>
+        </div>
+        {{#if this.activeProperty.subtitle}}
+          <div>{{this.activeProperty.subtitle}}</div>
+        {{/if}}
+      </div>
+    {{else}}
+      <div class="callout secondary text-small" data-test-no-active-property>
+        Selecione um lote pela busca ou diretamente no mapa para manter um imóvel ativo entre os módulos.
+      </div>
+    {{/if}}
+  {{/unless}}
+
+  {{yield this.activeProperty}}
+</div>

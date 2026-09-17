@@ -1,0 +1,21 @@
+<ModuleShell
+  @title="Imóvel 360"
+  @description="Visão consolidada do imóvel, preservando o relatório territorial e urbanístico já existente no LoteDiretor."
+  as |property|
+>
+  {{#if property.isActive}}
+    <h3 class="header-medium">Relatório do imóvel</h3>
+    <p>O lote ativo é o contexto comum para cadastro fiscal, zoneamento, legislação urbanística, riscos, patrimônio, entorno e demais evidências territoriais.</p>
+    <p>
+      <LinkTo @route="map-feature.sp-lot" @model={{property.id}} class="button small">
+        Abrir relatório atual
+      </LinkTo>
+    </p>
+  {{else}}
+    <h3 class="header-medium">Comece pelo lote</h3>
+    <p>Use a busca ou clique em um lote no mapa. Depois de carregado, o mesmo imóvel continuará ativo ao navegar pelos demais módulos.</p>
+  {{/if}}
+
+  <h3 class="header-medium">Ferramentas preservadas</h3>
+  <p>Comparação de lotes, camadas oficiais, favoritos, conjuntos de camadas, medições e impressão continuam operando no shell cartográfico atual.</p>
+</ModuleShell>

@@ -11,11 +11,15 @@
   </banner.title>
   <banner.nav>
     <ul class="menu vertical large-horizontal">
-      <li><LinkTo @route="about">Sobre</LinkTo></li>
-      <li><LinkTo @route="features" class="features-header-link">Recursos</LinkTo></li>
-      <li><LinkTo @route="data">Dados</LinkTo></li>
+      <li><LinkTo @route="imovel-360">Imóvel 360</LinkTo></li>
+      <li><LinkTo @route="plano-diretor">Plano Diretor</LinkTo></li>
+      <li><LinkTo @route="rural">Rural</LinkTo></li>
+      <li><LinkTo @route="condominio">Condomínio</LinkTo></li>
+      <li><LinkTo @route="solar">Solar</LinkTo></li>
+      <li><LinkTo @route="ai-tec">A.I TEC</LinkTo></li>
+      <li><LinkTo @route="prefeitura">Prefeitura</LinkTo></li>
       <li class="saved-bookmarks-counter">
-        <LinkTo @route="bookmarks"><FaIcon @icon="bookmark" /> Salvos
+        <LinkTo @route="mais">Mais
           {{#if this.totalBookmarks}}<span class="badge sup">{{this.totalBookmarks}}</span>{{/if}}
         </LinkTo>
       </li>
