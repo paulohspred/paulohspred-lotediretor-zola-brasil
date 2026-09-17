@@ -124,13 +124,13 @@ import json,sys
 first=json.load(open(sys.argv[1])); second=json.load(open(sys.argv[2]))
 assert first['candidateCount']==2 and first['evidenceCount']==1, first
 assert first['zoneCodes']==['ZEIS-1'], first
-assert first['createdCount']==1 and first['citationCreatedCount']==1 and first['provenanceCreatedCount']==1, first
+assert first['createdCount']==1 and first['citationCreatedCount']==1 and first['provenanceCreatedCount']==1 and first['qualityAssessmentCreatedCount']==1, first
 assert second['evidenceCount']==1 and second['createdCount']==0, second
-assert second['citationCreatedCount']==0 and second['provenanceCreatedCount']==0, second
+assert second['citationCreatedCount']==0 and second['provenanceCreatedCount']==0 and second['qualityAssessmentCreatedCount']==0, second
 assert first['evidenceStatus']=='CALCULADO' and first['sha256Verified'] is True, first
 PY
 
-COUNTS="$("${COMPOSE[@]}" exec -T postgres psql -U lotediretor -d lotediretor_platform -Atc "SELECT (SELECT count(*) FROM core.source_snapshot ss JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${ZONING_SOURCE}') || ':' || (SELECT count(*) FROM evidence.evidence e JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${ZONING_SOURCE}' AND e.evidence_type='SP_LOT_ZONING_INTERSECTION') || ':' || (SELECT count(*) FROM evidence.citation c JOIN evidence.evidence e ON e.id=c.evidence_id JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${ZONING_SOURCE}') || ':' || (SELECT count(*) FROM evidence.provenance_link p JOIN evidence.evidence e ON e.id=p.evidence_id JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${ZONING_SOURCE}' AND p.relation_type='SPATIAL_INTERSECTION_INPUT');")"
-test "$COUNTS" = '1:1:1:1'
+COUNTS="$("${COMPOSE[@]}" exec -T postgres psql -U lotediretor -d lotediretor_platform -Atc "SELECT (SELECT count(*) FROM core.source_snapshot ss JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${ZONING_SOURCE}') || ':' || (SELECT count(*) FROM evidence.evidence e JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${ZONING_SOURCE}' AND e.evidence_type='SP_LOT_ZONING_INTERSECTION') || ':' || (SELECT count(*) FROM evidence.citation c JOIN evidence.evidence e ON e.id=c.evidence_id JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${ZONING_SOURCE}') || ':' || (SELECT count(*) FROM evidence.provenance_link p JOIN evidence.evidence e ON e.id=p.evidence_id JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${ZONING_SOURCE}' AND p.relation_type='SPATIAL_INTERSECTION_INPUT') || ':' || (SELECT count(*) FROM evidence.quality_assessment qa JOIN evidence.evidence e ON e.id=qa.evidence_id JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${ZONING_SOURCE}' AND qa.geometry_quality='EXACT_2D_OVERLAP');")"
+test "$COUNTS" = '1:1:1:1:1'
 
 echo 'geosampa-zoning-evidence-smoke=OK semantic-idempotency=OK exact-overlap=OK provenance=OK'

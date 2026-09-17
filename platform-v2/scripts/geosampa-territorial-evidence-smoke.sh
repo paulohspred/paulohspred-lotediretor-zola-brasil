@@ -128,9 +128,9 @@ first=json.load(open(sys.argv[1])); second=json.load(open(sys.argv[2])); layer,c
 assert first['layerKey']==layer and first['evidenceType']==etype, first
 assert first['candidateCount']==2 and first['evidenceCount']==1, first
 assert first['codes']==[code], first
-assert first['createdCount']==1 and first['citationCreatedCount']==1 and first['provenanceCreatedCount']==1, first
+assert first['createdCount']==1 and first['citationCreatedCount']==1 and first['provenanceCreatedCount']==1 and first['qualityAssessmentCreatedCount']==1, first
 assert second['evidenceCount']==1 and second['createdCount']==0, second
-assert second['citationCreatedCount']==0 and second['provenanceCreatedCount']==0, second
+assert second['citationCreatedCount']==0 and second['provenanceCreatedCount']==0 and second['qualityAssessmentCreatedCount']==0, second
 assert first['evidenceStatus']=='CALCULADO' and first['sha256Verified'] is True, first
 PY
 }
@@ -139,8 +139,8 @@ run_layer macrozona MZURB SP_LOT_MACROZONA_INTERSECTION
 run_layer macroarea MQU SP_LOT_MACROAREA_INTERSECTION
 run_layer risco_hidrologico R1 SP_LOT_HYDROLOGICAL_RISK_INTERSECTION
 
-COUNTS="$("${COMPOSE[@]}" exec -T postgres psql -U lotediretor -d lotediretor_platform -Atc "SELECT (SELECT count(*) FROM core.source_snapshot ss JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${TERRITORIAL_SOURCE}') || ':' || (SELECT count(*) FROM evidence.evidence e JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${TERRITORIAL_SOURCE}' AND e.evidence_type IN ('SP_LOT_MACROZONA_INTERSECTION','SP_LOT_MACROAREA_INTERSECTION','SP_LOT_HYDROLOGICAL_RISK_INTERSECTION')) || ':' || (SELECT count(*) FROM evidence.citation c JOIN evidence.evidence e ON e.id=c.evidence_id JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${TERRITORIAL_SOURCE}') || ':' || (SELECT count(*) FROM evidence.provenance_link p JOIN evidence.evidence e ON e.id=p.evidence_id JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${TERRITORIAL_SOURCE}' AND p.relation_type='SPATIAL_INTERSECTION_INPUT');")"
-test "$COUNTS" = '3:3:3:3'
+COUNTS="$("${COMPOSE[@]}" exec -T postgres psql -U lotediretor -d lotediretor_platform -Atc "SELECT (SELECT count(*) FROM core.source_snapshot ss JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${TERRITORIAL_SOURCE}') || ':' || (SELECT count(*) FROM evidence.evidence e JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${TERRITORIAL_SOURCE}' AND e.evidence_type IN ('SP_LOT_MACROZONA_INTERSECTION','SP_LOT_MACROAREA_INTERSECTION','SP_LOT_HYDROLOGICAL_RISK_INTERSECTION')) || ':' || (SELECT count(*) FROM evidence.citation c JOIN evidence.evidence e ON e.id=c.evidence_id JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${TERRITORIAL_SOURCE}') || ':' || (SELECT count(*) FROM evidence.provenance_link p JOIN evidence.evidence e ON e.id=p.evidence_id JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${TERRITORIAL_SOURCE}' AND p.relation_type='SPATIAL_INTERSECTION_INPUT') || ':' || (SELECT count(*) FROM evidence.quality_assessment qa JOIN evidence.evidence e ON e.id=qa.evidence_id JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${TERRITORIAL_SOURCE}' AND qa.geometry_quality='EXACT_2D_OVERLAP');")"
+test "$COUNTS" = '3:3:3:3:3'
 
 COVERAGE="$("${COMPOSE[@]}" exec -T postgres psql -U lotediretor -d lotediretor_platform -Atc "SELECT string_agg(e.value_text || ':' || round((e.metadata->>'shareOfLotGeometry')::numeric,4)::text, ',' ORDER BY e.value_text) FROM evidence.evidence e JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${TERRITORIAL_SOURCE}' AND e.evidence_type IN ('SP_LOT_MACROZONA_INTERSECTION','SP_LOT_MACROAREA_INTERSECTION','SP_LOT_HYDROLOGICAL_RISK_INTERSECTION');")"
 test "$COVERAGE" = 'MQU:1.0000,MZURB:1.0000,R1:1.0000'

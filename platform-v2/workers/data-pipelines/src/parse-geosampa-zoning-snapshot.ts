@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Pool } from 'pg';
+import { ensureSpatialIntegrityAssessment } from './spatial-integrity-assessment.js';
 
 const PARSER_VERSION = 'geosampa-zoning-intersection-v1';
 const EVIDENCE_TYPE = 'SP_LOT_ZONING_INTERSECTION';
@@ -175,7 +176,7 @@ async function persistEvidence(
   lotGeometryEvidenceId: string,
   candidate: ZoningCandidate,
   metrics: IntersectionMetrics,
-): Promise<{ id: string; created: boolean; citationCreated: boolean; provenanceCreated: boolean }> {
+): Promise<{ id: string; created: boolean; citationCreated: boolean; provenanceCreated: boolean; qualityAssessmentCreated: boolean }> {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -280,8 +281,15 @@ async function persistEvidence(
         [evidenceId, lotGeometryEvidenceId],
       );
     }
+    const qualityAssessmentCreated = await ensureSpatialIntegrityAssessment(client, evidenceId);
     await client.query('COMMIT');
-    return { id: evidenceId, created, citationCreated, provenanceCreated };
+    return {
+      id: evidenceId,
+      created,
+      citationCreated,
+      provenanceCreated,
+      qualityAssessmentCreated,
+    };
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -348,6 +356,7 @@ async function main(): Promise<void> {
         createdCount: persisted.filter((item) => item.created).length,
         citationCreatedCount: persisted.filter((item) => item.citationCreated).length,
         provenanceCreatedCount: persisted.filter((item) => item.provenanceCreated).length,
+        qualityAssessmentCreatedCount: persisted.filter((item) => item.qualityAssessmentCreated).length,
         zoneCodes: persisted.map((item) => item.candidate.zoneCode),
         sha256Verified: true,
       })}\n`,
