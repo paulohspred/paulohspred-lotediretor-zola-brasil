@@ -1,0 +1,70 @@
+<section
+  data-test-territorial-context-evidence
+  {{did-insert this.load}}
+  {{did-update this.load @propertyId}}
+>
+  <h3 class="header-medium">Estrutura territorial versionada</h3>
+  {{#if this.loading}}
+    <p class="text-small">Carregando relações territoriais calculadas…</p>
+  {{else if this.errorMessage}}
+    <p class="callout warning text-small" data-test-territorial-context-error>
+      A evidência de macrozona e macroárea está temporariamente indisponível. O
+      mapa e as demais informações continuam operando.
+    </p>
+  {{else if this.evidenceRows.length}}
+    <div class="callout secondary text-small" data-test-territorial-context>
+      {{#each this.evidenceRows as |evidence|}}
+        <div data-test-territorial-context-row>
+          <strong>{{evidence.contextLabel}}: {{evidence.valueText}}</strong>
+          {{#if evidence.detailText}}
+            <div>{{evidence.detailText}}</div>
+          {{/if}}
+          <div>Status: {{evidence.statusLabel}}</div>
+          {{#if evidence.spatialOverlapPresentation}}
+            <div data-test-territorial-context-coverage>
+              Cobertura da geometria do lote:
+              <strong
+              >{{evidence.spatialOverlapPresentation.coverageLabel}}</strong>
+            </div>
+            <div>
+              Área de sobreposição:
+              {{evidence.spatialOverlapPresentation.intersectionAreaLabel}}
+              /
+              {{evidence.spatialOverlapPresentation.subjectGeometryAreaLabel}}
+            </div>
+          {{/if}}
+          <div>Fonte: {{evidence.snapshot.authority}}</div>
+          <div>Snapshot SHA-256: <code>{{evidence.snapshot.sha256}}</code></div>
+          {{#if evidence.calculationMethod}}
+            <div>Método: <code>{{evidence.calculationMethod}}</code></div>
+          {{/if}}
+          {{#if evidence.citation.sourceUrl}}
+            <div>
+              <a
+                href={{evidence.citation.sourceUrl}}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Abrir consulta oficial capturada
+              </a>
+            </div>
+          {{/if}}
+        </div>
+      {{/each}}
+    </div>
+    <p class="text-small">As relações acima são sobreposições geométricas
+      calculadas sobre snapshots oficiais. Elas não substituem, isoladamente, o
+      enquadramento normativo do imóvel.</p>
+  {{else if @propertyId}}
+    <p class="callout secondary text-small" data-test-territorial-context-empty>
+      Ainda não há macrozona ou macroárea versionada para este imóvel.
+    </p>
+  {{else}}
+    <p
+      class="callout secondary text-small"
+      data-test-territorial-context-no-property
+    >
+      Selecione um imóvel para consultar macrozona e macroárea versionadas.
+    </p>
+  {{/if}}
+</section>
