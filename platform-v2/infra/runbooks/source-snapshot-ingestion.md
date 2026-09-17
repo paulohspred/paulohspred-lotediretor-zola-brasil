@@ -60,3 +60,9 @@ O smoke usa uma fonte temporária isolada, ingere duas vezes, exige um único sn
 ## Rollback
 
 Código: reverter o commit do worker/compose. Dados: snapshots reais são artefatos de auditoria e não devem ser apagados como parte de rollback de aplicação. Em ambiente de desenvolvimento, remoção deve ser deliberada e coordenada entre `core.source_snapshot` e o objeto MinIO correspondente.
+
+## Lote GeoSampa com sujeito explícito
+
+Para lotes de São Paulo, use o conector WFS específico em vez do downloader GET genérico. Ele registra `subjectType=SP_LOT`, o `subjectId` igual ao `cd_identificador` e um fingerprint canônico do GeoJSON sem o `timeStamp` de resposta do GeoServer. O objeto armazenado continua sendo a resposta bruta original, cujo SHA-256 permanece em `core.source_snapshot.sha256`.
+
+A deduplicação semântica só ignora o `timeStamp` de topo. Qualquer alteração nos dados/geométria da feature muda o fingerprint e gera um novo snapshot.

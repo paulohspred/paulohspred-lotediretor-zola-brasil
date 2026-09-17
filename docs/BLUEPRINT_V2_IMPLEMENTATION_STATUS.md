@@ -11,7 +11,7 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 | Etapa | Blueprint | Estado atual | Próximo gate |
 |---|---|---|---|
 | 0 | Fundação | **PARCIAL / RUNTIME + PLATFORM API PROVADOS** | Auth/realm Keycloak, tenant context, app shells e promoção para staging |
-| 1 | Core territorial | **PARCIAL / SP FORTE + SNAPSHOT INGEST + EVIDENCE PIPELINE** | parsers jurídicos/territoriais específicos, IBGE nacional, Parcel Resolver genérico, MVT temático e relatório v1 por API |
+| 1 | Core territorial | **PARCIAL / SP FORTE + SNAPSHOT INGEST + EVIDENCE POR SUJEITO** | ampliar evidências territoriais por imóvel, IBGE nacional, Parcel Resolver genérico, MVT temático e relatório v1 por API |
 | 2 | UX cliente | **PARCIAL / ZOLA MODULAR SHELL + PROVENIÊNCIA** | expandir integração dos módulos com o novo core preservando mapa, busca, camadas e fluxos existentes |
 | 3 | Imóvel 360 | **PARCIAL / SHELL + IMÓVEL ATIVO** | migrar progressivamente evidências específicas do imóvel para contratos da Platform API |
 | 4 | RE Rural | **NÃO INICIADA** | CAR/SIGEF/SNCR/CIB/IBAMA/INPE + overlaps/monitoring |
@@ -43,6 +43,7 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 - `core.source_registry`, endpoint, licença, cobertura e health.
 - Source Snapshot API read-only + worker de ingestão GET idempotente, hash SHA-256 e objeto content-addressed no MinIO; primeiro snapshot oficial LPUOS comprovado em desenvolvimento. Faltam conectores específicos, retenção WORM de produção e automação por eventos/agendamento.
 - Evidence API read-only + primeiro parser factual HTML (`SOURCE_DOCUMENT_TITLE`) com verificação do SHA do snapshot, citação e idempotência; primeira evidência oficial LPUOS comprovada em desenvolvimento. Faltam parsers jurídicos/territoriais específicos, quality assessments automáticos e modelagem explícita de conflitos.
+- Evidence ganhou vínculo explícito opcional `subjectType`/`subjectId`; o primeiro pipeline por imóvel captura `PMSP_GEOSAMPA_LOTES`, deduplica o `timeStamp` volátil por fingerprint canônico e publica `SP_LOT_IDENTIFIER` confirmado para o lote consultado.
 - Plano Diretor consome, via proxy same-origin read-only, a evidência factual versionada da LPUOS e exibe fonte/hash/citação sem afirmar aplicabilidade de parâmetros ao imóvel.
 - Object storage imutável para artefatos brutos e relatórios.
 - Valkey para cache/locks; NATS JetStream para eventos; OpenSearch para busca documental.

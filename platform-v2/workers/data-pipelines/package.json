@@ -7,7 +7,9 @@
     "build": "tsc -p tsconfig.build.json",
     "snapshot:ingest": "tsx src/ingest-source-snapshot.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "snapshot:parse-html": "tsx src/parse-html-snapshot.ts"
+    "snapshot:parse-html": "tsx src/parse-html-snapshot.ts",
+    "snapshot:ingest-geosampa-lot": "tsx src/ingest-geosampa-lot-snapshot.ts",
+    "snapshot:parse-geosampa-lot": "tsx src/parse-geosampa-lot-snapshot.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.888.0",

@@ -37,3 +37,23 @@ docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.
 ```
 
 A criação é idempotente por identidade lógica protegida com advisory lock transacional.
+
+## GeoSampa lote → Evidence
+
+O conector `geosampa-lot-wfs-v1` captura um lote por `cd_identificador`, preserva os bytes brutos no bucket `sources` e registra um fingerprint canônico que ignora apenas o `timeStamp` volátil do envelope GeoServer. Assim, duas consultas sem mudança cadastral reutilizam o mesmo snapshot lógico sem adulterar a primeira captura.
+
+```sh
+docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example \
+  --profile ingest run --rm --entrypoint node data-pipelines \
+  workers/data-pipelines/dist/ingest-geosampa-lot-snapshot.js --lot-id 6492402
+```
+
+Depois, o parser factual valida novamente o SHA-256 bruto e cria `SP_LOT_IDENTIFIER` com `subjectType=SP_LOT` e `subjectId=<cd_identificador>`:
+
+```sh
+docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example \
+  --profile ingest run --rm --entrypoint node data-pipelines \
+  workers/data-pipelines/dist/parse-geosampa-lot-snapshot.js --snapshot-id <UUID>
+```
+
+O parser não deriva zoneamento, SQL formatado, propriedade dominial ou parâmetros urbanísticos; nesta etapa ele confirma apenas a identidade cadastral publicada pelo GeoSampa.
