@@ -33,6 +33,8 @@ jobs:
         run: sudo ./platform-v2/scripts/geosampa-lot-evidence-smoke.sh
       - name: Verify GeoSampa zoning evidence pipeline
         run: sudo ./platform-v2/scripts/geosampa-zoning-evidence-smoke.sh
+      - name: Verify GeoSampa territorial evidence pipeline
+        run: sudo ./platform-v2/scripts/geosampa-territorial-evidence-smoke.sh
       - name: Verify database
         run: |
           count=$(docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example exec -T postgres \

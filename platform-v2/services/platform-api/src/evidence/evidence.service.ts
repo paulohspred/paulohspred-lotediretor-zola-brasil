@@ -59,8 +59,7 @@ SELECT
   e.calculation_method,
   e.parser_version,
   CASE
-    WHEN e.evidence_type = 'SP_LOT_ZONING_INTERSECTION'
-      AND e.metadata ? 'intersectionAreaM2'
+    WHEN e.metadata ? 'intersectionAreaM2'
       AND e.metadata ? 'lotGeometryAreaM2'
       AND e.metadata ? 'shareOfLotGeometry'
     THEN jsonb_build_object(

@@ -11,7 +11,9 @@
     "snapshot:ingest-geosampa-lot": "tsx src/ingest-geosampa-lot-snapshot.ts",
     "snapshot:parse-geosampa-lot": "tsx src/parse-geosampa-lot-snapshot.ts",
     "snapshot:ingest-geosampa-zoning": "tsx src/ingest-geosampa-zoning-snapshot.ts",
-    "snapshot:parse-geosampa-zoning": "tsx src/parse-geosampa-zoning-snapshot.ts"
+    "snapshot:parse-geosampa-zoning": "tsx src/parse-geosampa-zoning-snapshot.ts",
+    "snapshot:ingest-geosampa-territorial": "tsx src/ingest-geosampa-territorial-snapshot.ts",
+    "snapshot:parse-geosampa-territorial": "tsx src/parse-geosampa-territorial-snapshot.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.888.0",
