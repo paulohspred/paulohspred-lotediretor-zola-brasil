@@ -1,6 +1,7 @@
 <CartoDataProvider
   @modelId={{this.model.id}}
-  @modelName="sp-lot" as |lot|
+  @modelName="sp-lot"
+  @onLoad={{this.setActiveProperty}} as |lot|
 >
   <Mapbox::MapFeatureRenderer @model={{lot}} />
   <Bookmarks::BookmarkButton @bookmarkableModel={{lot}} />

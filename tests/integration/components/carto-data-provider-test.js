@@ -28,4 +28,28 @@ module('Integration | Component | carto-data-provider', function (hooks) {
 
     assert.equal(this.element.textContent.trim(), 'it loads');
   });
+
+  test('it notifies when the record has loaded', async function (assert) {
+    this.server.create('lot', { id: 'bbl' });
+
+    this.cartoQueryTemplate = function (id) {
+      return `${id}`;
+    };
+
+    this.onLoad = (record) => {
+      this.loadedRecord = record;
+    };
+
+    await render(hbs`
+      <CartoDataProvider
+        @modelId='bbl'
+        @modelName='lot'
+        @onLoad={{this.onLoad}}
+      >
+        loaded
+      </CartoDataProvider>
+    `);
+
+    assert.strictEqual(this.loadedRecord.id, 'bbl');
+  });
 });

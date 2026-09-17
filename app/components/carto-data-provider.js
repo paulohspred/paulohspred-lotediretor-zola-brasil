@@ -17,9 +17,17 @@ export default class CartoDataProvider extends Component {
 
   modelId = null;
 
+  onLoad = null;
+
   @keepLatestTask({ retryable: delayRetryPolicy, maxConcurrency: 1 })
   findRecordTask = function* () {
-    return yield this.store.findRecord(this.modelName, this.modelId);
+    const record = yield this.store.findRecord(this.modelName, this.modelId);
+
+    if (typeof this.onLoad === 'function') {
+      this.onLoad(record);
+    }
+
+    return record;
   };
 
   @computed('findRecordTask', 'modelId', 'modelName')
