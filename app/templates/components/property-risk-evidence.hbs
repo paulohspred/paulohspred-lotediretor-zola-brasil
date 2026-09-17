@@ -1,0 +1,73 @@
+<section
+  data-test-property-risk-evidence
+  {{did-insert this.load}}
+  {{did-update this.load @propertyId}}
+>
+  <h3 class="header-medium">Risco hidrológico versionado</h3>
+  {{#if this.loading}}
+    <p class="text-small">Consultando sobreposição com a camada oficial…</p>
+  {{else if this.errorMessage}}
+    <p class="callout warning text-small" data-test-property-risk-error>
+      A evidência de risco hidrológico está temporariamente indisponível. O
+      relatório atual continua operando.
+    </p>
+  {{else if this.evidenceRows.length}}
+    <div class="callout secondary text-small" data-test-property-risk>
+      {{#each this.evidenceRows as |evidence|}}
+        <div data-test-property-risk-row>
+          <strong>Grau publicado pela fonte: {{evidence.valueText}}</strong>
+          {{#if evidence.citation.quotedText}}
+            <div>{{evidence.citation.quotedText}}</div>
+          {{/if}}
+          <div>Status da relação espacial: {{evidence.statusLabel}}</div>
+          {{#if evidence.spatialOverlapPresentation}}
+            <div data-test-property-risk-coverage>
+              Cobertura da geometria do lote:
+              <strong
+              >{{evidence.spatialOverlapPresentation.coverageLabel}}</strong>
+            </div>
+            <div data-test-property-risk-area>
+              Área de sobreposição:
+              {{evidence.spatialOverlapPresentation.intersectionAreaLabel}}
+              /
+              {{evidence.spatialOverlapPresentation.subjectGeometryAreaLabel}}
+            </div>
+          {{/if}}
+          <div>Fonte: {{evidence.snapshot.authority}}</div>
+          <div>Snapshot SHA-256: <code>{{evidence.snapshot.sha256}}</code></div>
+          {{#if evidence.calculationMethod}}
+            <div>Método: <code>{{evidence.calculationMethod}}</code></div>
+          {{/if}}
+          {{#if evidence.citation.sourceUrl}}
+            <div>
+              <a
+                href={{evidence.citation.sourceUrl}}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Abrir consulta oficial capturada
+              </a>
+            </div>
+          {{/if}}
+        </div>
+      {{/each}}
+    </div>
+    {{! template-lint-disable no-whitespace-within-word }}
+    <p class="text-small">
+      Esta evidência reproduz o grau e o processo publicados pela fonte e
+      confirma apenas a sobreposição geométrica calculada com a camada oficial.
+      Não substitui laudo técnico, vistoria atualizada ou avaliação de
+      engenharia e defesa civil.
+    </p>
+    {{! template-lint-enable no-whitespace-within-word }}
+  {{else if @propertyId}}
+    <p class="callout secondary text-small" data-test-property-risk-empty>
+      Ainda não há sobreposição de risco hidrológico versionada para este
+      imóvel.
+    </p>
+  {{else}}
+    <p class="callout secondary text-small" data-test-property-risk-no-property>
+      Selecione um imóvel para consultar evidências de risco hidrológico.
+    </p>
+  {{/if}}
+</section>

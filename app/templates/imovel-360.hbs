@@ -7,6 +7,7 @@
     <h3 class="header-medium">Relatório do imóvel</h3>
     <p>O lote ativo é o contexto comum para cadastro fiscal, zoneamento, legislação urbanística, riscos, patrimônio, entorno e demais evidências territoriais.</p>
     <PropertySourceEvidence @propertyId={{property.id}} />
+    <PropertyRiskEvidence @propertyId={{property.id}} />
     <p>
       <LinkTo @route="map-feature.sp-lot" @model={{property.id}} class="button small">
         Abrir relatório atual

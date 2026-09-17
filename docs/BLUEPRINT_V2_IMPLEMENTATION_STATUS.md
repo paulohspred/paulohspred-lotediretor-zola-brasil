@@ -46,6 +46,7 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 - Evidence ganhou vínculo explícito opcional `subjectType`/`subjectId`; o pipeline por imóvel captura `PMSP_GEOSAMPA_LOTES`, deduplica o `timeStamp` volátil por fingerprint canônico e publica fatos cadastrais confirmados e a geometria oficial versionada do lote. O pipeline de zoneamento captura candidatos da camada `perimetro_zona_lei_18177_24` pelo bbox dessa geometria e publica apenas sobreposições 2D positivas como `SP_LOT_ZONING_INTERSECTION` com status `CALCULADO`, citação e proveniência explícita para a geometria do lote.
 - O pipeline territorial por imóvel calcula em PostGIS as interseções de zoneamento, macrozona e macroárea a partir da geometria versionada do lote, com citação, proveniência e métricas de cobertura.
 - Plano Diretor consome, via proxy same-origin read-only, a evidência factual versionada da LPUOS e as sobreposições calculadas de zoneamento, macrozona e macroárea para o imóvel ativo; exibe fonte/hash/citação, método e cobertura sem converter a sobreposição geométrica, isoladamente, em conclusão jurídica ou parâmetro construtivo.
+- Imóvel 360 consome a identidade cadastral confirmada do lote e a sobreposição hidrológica calculada, com snapshot, citação, método e cobertura, sem interpretar o grau publicado pela fonte nem substituir laudo ou vistoria técnica.
 - Object storage imutável para artefatos brutos e relatórios.
 - Valkey para cache/locks; NATS JetStream para eventos; OpenSearch para busca documental.
 - Martin MVT sobre views seguras.
