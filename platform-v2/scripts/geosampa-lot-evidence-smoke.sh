@@ -43,7 +43,7 @@ class Handler(BaseHTTPRequestHandler):
             'type':'FeatureCollection',
             'features':[{
                 'type':'Feature','id':f'lote_cidadao.{LOT_ID}',
-                'geometry':None,
+                'geometry':{'type':'Polygon','coordinates':[[[-46.5022,-23.5796],[-46.5020,-23.5796],[-46.5020,-23.5794],[-46.5022,-23.5794],[-46.5022,-23.5796]]]},
                 'properties':{
                     'cd_identificador':LOT_ID,
                     'cd_setor_fiscal':'148','cd_quadra_fiscal':'063','cd_lote':'0024','cd_digito_sql':'0',
@@ -114,16 +114,16 @@ assert second['created'] is False and second['citationCreated'] is False, second
 assert second['evidenceId']==first['evidenceId'], (first,second)
 assert first['subjectType']=='SP_LOT' and first['subjectId']=='6492402', first
 assert first['evidenceType']=='SP_LOT_IDENTIFIER' and first['evidenceStatus']=='CONFIRMADO', first
-assert first['evidenceCount']==8 and first['createdCount']==8 and first['citationCreatedCount']==8, first
-assert second['evidenceCount']==8 and second['createdCount']==0 and second['citationCreatedCount']==0, second
+assert first['evidenceCount']==9 and first['createdCount']==9 and first['citationCreatedCount']==9, first
+assert second['evidenceCount']==9 and second['createdCount']==0 and second['citationCreatedCount']==0, second
 assert set(first['evidenceTypes'])=={
     'SP_LOT_IDENTIFIER','SP_LOT_FISCAL_SECTOR','SP_LOT_FISCAL_BLOCK','SP_LOT_FISCAL_LOT',
-    'SP_LOT_SQL_DIGIT','SP_LOT_STREET_NAME','SP_LOT_STREET_NUMBER','SP_LOT_LAND_AREA'
+    'SP_LOT_SQL_DIGIT','SP_LOT_STREET_NAME','SP_LOT_STREET_NUMBER','SP_LOT_LAND_AREA','SP_LOT_GEOMETRY'
 }, first
 assert first['sha256Verified'] is True, first
 PY
 
 COUNTS="$("${COMPOSE[@]}" exec -T postgres psql -U lotediretor -d lotediretor_platform -Atc "SELECT (SELECT count(*) FROM core.source_snapshot ss JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${SOURCE_CODE}') || ':' || (SELECT count(*) FROM evidence.evidence e JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${SOURCE_CODE}' AND e.subject_type='SP_LOT' AND e.subject_id='${LOT_ID}') || ':' || (SELECT count(*) FROM evidence.citation c JOIN evidence.evidence e ON e.id=c.evidence_id JOIN core.source_snapshot ss ON ss.id=e.source_snapshot_id JOIN core.source_registry sr ON sr.id=ss.source_registry_id WHERE sr.source_code='${SOURCE_CODE}');")"
-test "$COUNTS" = '1:8:8'
+test "$COUNTS" = '1:9:9'
 
-echo 'geosampa-lot-evidence-smoke=OK semantic-idempotency=OK subject=OK evidence-fields=8 citation=OK'
+echo 'geosampa-lot-evidence-smoke=OK semantic-idempotency=OK subject=OK evidence-fields=8 geometry=OK citation=OK'

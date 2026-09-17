@@ -4,6 +4,9 @@ import { Pool } from 'pg';
 
 const IDENTITY_PARSER_VERSION = 'geosampa-lot-identity-v1';
 const PROPERTIES_PARSER_VERSION = 'geosampa-lot-properties-v1';
+const GEOMETRY_PARSER_VERSION = 'geosampa-lot-geometry-v1';
+const GEOMETRY_EVIDENCE_TYPE = 'SP_LOT_GEOMETRY';
+const GEOMETRY_LOCATOR = 'features[0].geometry';
 const SUBJECT_TYPE = 'SP_LOT';
 
 type EvidenceFact = {
@@ -12,6 +15,7 @@ type EvidenceFact = {
   valueText: string;
   parserVersion: string;
   unit?: string;
+  geometry?: Record<string, unknown>;
 };
 
 type SnapshotRow = {
@@ -90,6 +94,10 @@ function extractEvidenceFacts(
   }
   const feature = features[0] as Record<string, unknown> | undefined;
   const properties = feature?.properties as Record<string, unknown> | undefined;
+  const geometry =
+    feature?.geometry && typeof feature.geometry === 'object'
+      ? (feature.geometry as Record<string, unknown>)
+      : null;
   const lotId = String(properties?.cd_identificador ?? '');
   if (!lotId || lotId !== expectedLotId) {
     throw new Error(`Snapshot lot identifier ${lotId || 'missing'} does not match requested ${expectedLotId}`);
@@ -123,6 +131,15 @@ function extractEvidenceFacts(
   addTextFact('SP_LOT_STREET_NUMBER', 'cd_numero_porta', properties?.cd_numero_porta);
   addTextFact('SP_LOT_ADDRESS_COMPLEMENT', 'tx_complemento_endereco', properties?.tx_complemento_endereco);
   addTextFact('SP_LOT_LAND_AREA', 'qt_area_terreno', properties?.qt_area_terreno, 'm²');
+  if (geometry) {
+    facts.push({
+      evidenceType: GEOMETRY_EVIDENCE_TYPE,
+      locator: GEOMETRY_LOCATOR,
+      valueText: String(geometry.type ?? 'Geometry'),
+      parserVersion: GEOMETRY_PARSER_VERSION,
+      geometry,
+    });
+  }
 
   return { lotId, facts };
 }
@@ -161,8 +178,12 @@ async function persistEvidence(
       const inserted = await client.query<EvidenceRow>(
         `INSERT INTO evidence.evidence (
            source_snapshot_id, evidence_type, subject_type, subject_id,
-           locator, value_text, unit, status, parser_version, metadata
-         ) VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, 'CONFIRMADO', $8, $9::jsonb)
+           locator, value_text, unit, geometry, status, parser_version, metadata
+         ) VALUES (
+           $1::uuid, $2, $3, $4, $5, $6, $7,
+           CASE WHEN $8::text IS NULL THEN NULL ELSE ST_SetSRID(ST_GeomFromGeoJSON($8), 4326) END,
+           'CONFIRMADO', $9, $10::jsonb
+         )
          RETURNING id::text`,
         [
           snapshot.id,
@@ -172,6 +193,7 @@ async function persistEvidence(
           fact.locator,
           fact.valueText,
           fact.unit ?? null,
+          fact.geometry ? JSON.stringify(fact.geometry) : null,
           fact.parserVersion,
           JSON.stringify({
             sourceCode: snapshot.source_code,
