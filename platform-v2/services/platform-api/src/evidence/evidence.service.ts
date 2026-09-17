@@ -14,6 +14,8 @@ export type EvidenceFilters = {
   municipalityIbge?: string;
   sourceCode?: string;
   evidenceType?: string;
+  subjectType?: string;
+  subjectId?: string;
   locator?: string;
   status?: EvidenceStatus;
   limit?: number;
@@ -22,6 +24,8 @@ export type EvidenceFilters = {
 type EvidenceRow = {
   id: string;
   evidence_type: string;
+  subject_type: string | null;
+  subject_id: string | null;
   locator: string | null;
   value_text: string | null;
   unit: string | null;
@@ -41,6 +45,8 @@ const BASE_QUERY = `
 SELECT
   e.id::text,
   e.evidence_type,
+  e.subject_type,
+  e.subject_id,
   e.locator,
   e.value_text,
   e.unit,
@@ -128,14 +134,18 @@ export class EvidenceService {
        WHERE ($1::text IS NULL OR m.ibge_code = $1)
          AND ($2::text IS NULL OR sr.source_code = $2)
          AND ($3::text IS NULL OR e.evidence_type = $3)
-         AND ($4::text IS NULL OR e.locator = $4)
-         AND ($5::text IS NULL OR e.status = $5)
+         AND ($4::text IS NULL OR e.subject_type = $4)
+         AND ($5::text IS NULL OR e.subject_id = $5)
+         AND ($6::text IS NULL OR e.locator = $6)
+         AND ($7::text IS NULL OR e.status = $7)
        ORDER BY e.recorded_at DESC, e.id
-       LIMIT $6`,
+       LIMIT $8`,
       [
         filters.municipalityIbge ?? null,
         filters.sourceCode ?? null,
         filters.evidenceType ?? null,
+        filters.subjectType ?? null,
+        filters.subjectId ?? null,
         filters.locator ?? null,
         filters.status ?? null,
         limit,
@@ -158,6 +168,8 @@ export class EvidenceService {
     return {
       id: row.id,
       evidenceType: row.evidence_type,
+      subjectType: row.subject_type ?? undefined,
+      subjectId: row.subject_id ?? undefined,
       locator: row.locator ?? undefined,
       valueText: row.value_text ?? undefined,
       unit: row.unit ?? undefined,

@@ -19,6 +19,8 @@ export class EvidenceController {
   @ApiQuery({ name: 'municipalityIbge', required: false, example: '3550308' })
   @ApiQuery({ name: 'sourceCode', required: false, example: 'PMSP_GEOSAMPA_LOTES' })
   @ApiQuery({ name: 'evidenceType', required: false, example: 'ZONEAMENTO' })
+  @ApiQuery({ name: 'subjectType', required: false, example: 'SP_LOT' })
+  @ApiQuery({ name: 'subjectId', required: false, example: '123456789' })
   @ApiQuery({ name: 'locator', required: false, example: 'SQL:001.002.0003-1' })
   @ApiQuery({ name: 'status', required: false, enum: EvidenceStatus })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 100 })
@@ -27,6 +29,8 @@ export class EvidenceController {
     @Query('municipalityIbge') municipalityIbge?: string,
     @Query('sourceCode') sourceCode?: string,
     @Query('evidenceType') evidenceType?: string,
+    @Query('subjectType') subjectType?: string,
+    @Query('subjectId') subjectId?: string,
     @Query('locator') locator?: string,
     @Query('status') status?: EvidenceStatus,
     @Query('limit') limit?: string,
@@ -35,6 +39,8 @@ export class EvidenceController {
       municipalityIbge,
       sourceCode,
       evidenceType,
+      subjectType,
+      subjectId,
       locator,
       status,
       limit: limit === undefined ? undefined : Number(limit),

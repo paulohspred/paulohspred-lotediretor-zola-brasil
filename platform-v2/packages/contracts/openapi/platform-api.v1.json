@@ -138,6 +138,14 @@
             "example": "Confirmado",
             "type": "string"
           },
+          "subjectId": {
+            "example": "123456789",
+            "type": "string"
+          },
+          "subjectType": {
+            "example": "SP_LOT",
+            "type": "string"
+          },
           "unit": {
             "example": "m²",
             "type": "string"
@@ -453,6 +461,24 @@
             "required": false,
             "schema": {
               "example": "ZONEAMENTO",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "subjectType",
+            "required": false,
+            "schema": {
+              "example": "SP_LOT",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "subjectId",
+            "required": false,
+            "schema": {
+              "example": "123456789",
               "type": "string"
             }
           },

@@ -64,7 +64,7 @@ assert 'errors' not in j, j
 assert len(j['data']['sources'])==9, j
 PY
 
-curl -fsS 'http://127.0.0.1:54000/api/v1/evidence?municipalityIbge=3550308&limit=10' >/tmp/ld-api-evidence.json
+curl -fsS 'http://127.0.0.1:54000/api/v1/evidence?municipalityIbge=3550308&subjectType=SP_LOT&subjectId=123456789&limit=10' >/tmp/ld-api-evidence.json
 python3 - <<'PY'
 import json
 rows=json.load(open('/tmp/ld-api-evidence.json'))
@@ -79,7 +79,7 @@ PY
 test "$(curl -sS -o /tmp/ld-api-evidence-notfound -w '%{http_code}' http://127.0.0.1:54000/api/v1/evidence/00000000-0000-0000-0000-000000000000)" = 404
 
 curl -fsS -H 'content-type: application/json' \
-  --data '{"query":"query { evidence(municipalityIbge: \"3550308\", limit: 10) { id evidenceType status statusLabel snapshot { sourceCode datasetCode } citations { id } provenance { id relationType parentEvidenceId } } }"}' \
+  --data '{"query":"query { evidence(municipalityIbge: \"3550308\", subjectType: \"SP_LOT\", subjectId: \"123456789\", limit: 10) { id evidenceType subjectType subjectId status statusLabel snapshot { sourceCode datasetCode } citations { id } provenance { id relationType parentEvidenceId } } }"}' \
   http://127.0.0.1:54000/graphql >/tmp/ld-api-evidence-graphql.json
 python3 - <<'PY'
 import json

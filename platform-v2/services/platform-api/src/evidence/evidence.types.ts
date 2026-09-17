@@ -140,6 +140,14 @@ export class EvidenceRecord {
   evidenceType!: string;
 
   @Field({ nullable: true })
+  @ApiPropertyOptional({ example: 'SP_LOT' })
+  subjectType?: string;
+
+  @Field({ nullable: true })
+  @ApiPropertyOptional({ example: '123456789' })
+  subjectId?: string;
+
+  @Field({ nullable: true })
   @ApiPropertyOptional({ example: 'SQL:001.002.0003-1' })
   locator?: string;
 

@@ -732,6 +732,8 @@ function platformEvidenceQuery(query) {
     'municipalityIbge',
     'sourceCode',
     'evidenceType',
+    'subjectType',
+    'subjectId',
     'locator',
     'status',
     'limit',

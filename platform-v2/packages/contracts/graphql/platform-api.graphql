@@ -35,6 +35,8 @@ type EvidenceRecord {
   snapshot: EvidenceSnapshot!
   status: EvidenceStatus!
   statusLabel: String!
+  subjectId: String
+  subjectType: String
   unit: String
   validFrom: String
   validTo: String
@@ -63,7 +65,7 @@ enum EvidenceStatus {
 }
 
 type Query {
-  evidence(evidenceType: String, limit: Int, locator: String, municipalityIbge: String, sourceCode: String, status: EvidenceStatus): [EvidenceRecord!]!
+  evidence(evidenceType: String, limit: Int, locator: String, municipalityIbge: String, sourceCode: String, status: EvidenceStatus, subjectId: String, subjectType: String): [EvidenceRecord!]!
   evidenceById(id: String!): EvidenceRecord
   source(municipalityIbge: String, sourceCode: String!): SourceRegistryEntry
   sourceSnapshot(id: String!): SourceSnapshotRecord
