@@ -12,8 +12,8 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 |---|---|---|---|
 | 0 | Fundação | **PARCIAL / RUNTIME + PLATFORM API PROVADOS** | Auth/realm Keycloak, tenant context, app shells e promoção para staging |
 | 1 | Core territorial | **PARCIAL / SP FORTE + SNAPSHOT INGEST + EVIDENCE PIPELINE** | parsers jurídicos/territoriais específicos, IBGE nacional, Parcel Resolver genérico, MVT temático e relatório v1 por API |
-| 2 | UX cliente | **PARCIAL / ZOLA MODULAR SHELL** | ligar módulos ao novo core preservando mapa, busca, camadas e fluxos existentes |
-| 3 | Imóvel 360 | **PARCIAL / SHELL + IMÓVEL ATIVO** | migrar progressivamente o relatório territorial para contratos/evidências da Platform API |
+| 2 | UX cliente | **PARCIAL / ZOLA MODULAR SHELL + PROVENIÊNCIA** | expandir integração dos módulos com o novo core preservando mapa, busca, camadas e fluxos existentes |
+| 3 | Imóvel 360 | **PARCIAL / SHELL + IMÓVEL ATIVO** | migrar progressivamente evidências específicas do imóvel para contratos da Platform API |
 | 4 | RE Rural | **NÃO INICIADA** | CAR/SIGEF/SNCR/CIB/IBAMA/INPE + overlaps/monitoring |
 | 5 | AI Core | **NÃO INICIADA** | AI Gateway, ingestão, OpenSearch híbrido, A.I Cidades, tools e evals |
 | 6 | Condomínio | **NÃO INICIADA** | upload privado, regras/atas, A.I Condomínio, dashboard/relatório |
@@ -43,6 +43,7 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 - `core.source_registry`, endpoint, licença, cobertura e health.
 - Source Snapshot API read-only + worker de ingestão GET idempotente, hash SHA-256 e objeto content-addressed no MinIO; primeiro snapshot oficial LPUOS comprovado em desenvolvimento. Faltam conectores específicos, retenção WORM de produção e automação por eventos/agendamento.
 - Evidence API read-only + primeiro parser factual HTML (`SOURCE_DOCUMENT_TITLE`) com verificação do SHA do snapshot, citação e idempotência; primeira evidência oficial LPUOS comprovada em desenvolvimento. Faltam parsers jurídicos/territoriais específicos, quality assessments automáticos e modelagem explícita de conflitos.
+- Plano Diretor consome, via proxy same-origin read-only, a evidência factual versionada da LPUOS e exibe fonte/hash/citação sem afirmar aplicabilidade de parâmetros ao imóvel.
 - Object storage imutável para artefatos brutos e relatórios.
 - Valkey para cache/locks; NATS JetStream para eventos; OpenSearch para busca documental.
 - Martin MVT sobre views seguras.

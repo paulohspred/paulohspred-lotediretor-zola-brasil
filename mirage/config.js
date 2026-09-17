@@ -63,6 +63,8 @@ function routes() {
     }
   );
 
+  this.get('/api/platform/evidence', () => []);
+
   this.namespace = '/v1';
   this.get('layer-groups');
   this.post('v1/layer-groups', () => layerGroupsFixtures);

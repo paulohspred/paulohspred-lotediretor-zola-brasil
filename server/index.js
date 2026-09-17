@@ -1,4 +1,5 @@
 const fs = require('fs');
+const http = require('http');
 const https = require('https');
 const { buildUrbanParameters } = require('./sp-lpuos-parameters');
 const { querySiszon } = require('./sp-siszon');
@@ -13,6 +14,12 @@ const {
 
 const GEOSAMPA_WFS =
   'https://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/ows';
+const PLATFORM_API_URL =
+  process.env.PLATFORM_API_URL || 'http://127.0.0.1:54000';
+const PLATFORM_API_TIMEOUT_MS = Number(
+  process.env.PLATFORM_API_TIMEOUT_MS || 5000
+);
+const PLATFORM_API_MAX_BYTES = 2 * 1024 * 1024;
 const MAX_FEATURES = 5000;
 const MAX_BBOX_SPAN = 0.03;
 const SYSTEM_CA_PATH = '/etc/ssl/certs/ca-certificates.crt';
@@ -676,7 +683,93 @@ async function buildTerritorialAnalysis(nativeGeometry, lotId) {
   };
 }
 
+function requestPlatformApiJson(pathname, query = {}) {
+  const url = new URL(pathname, PLATFORM_API_URL);
+  Object.entries(query).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      url.searchParams.set(key, String(value));
+    }
+  });
+  const transport = url.protocol === 'https:' ? https : http;
+
+  return new Promise((resolve, reject) => {
+    const request = transport.get(
+      url,
+      { headers: { Accept: 'application/json' } },
+      (response) => {
+        const chunks = [];
+        let byteSize = 0;
+        response.on('data', (chunk) => {
+          byteSize += chunk.length;
+          if (byteSize > PLATFORM_API_MAX_BYTES) {
+            request.destroy(new Error('PLATFORM_API_RESPONSE_TOO_LARGE'));
+            return;
+          }
+          chunks.push(chunk);
+        });
+        response.on('end', () => {
+          const body = Buffer.concat(chunks).toString('utf8');
+          let payload;
+          try {
+            payload = body ? JSON.parse(body) : null;
+          } catch (_error) {
+            reject(new Error('PLATFORM_API_INVALID_JSON'));
+            return;
+          }
+          resolve({ status: response.statusCode || 502, payload });
+        });
+      }
+    );
+    request.setTimeout(PLATFORM_API_TIMEOUT_MS, () => {
+      request.destroy(new Error('PLATFORM_API_TIMEOUT'));
+    });
+    request.on('error', reject);
+  });
+}
+
+function platformEvidenceQuery(query) {
+  const allowed = [
+    'municipalityIbge',
+    'sourceCode',
+    'evidenceType',
+    'locator',
+    'status',
+    'limit',
+  ];
+  return allowed.reduce((result, key) => {
+    if (query[key] !== undefined) result[key] = query[key];
+    return result;
+  }, {});
+}
+
 module.exports = function (app) {
+  app.get('/api/platform/evidence', async (req, res) => {
+    try {
+      const upstream = await requestPlatformApiJson(
+        '/api/v1/evidence',
+        platformEvidenceQuery(req.query)
+      );
+      if (upstream.status < 200 || upstream.status >= 300) {
+        res
+          .status(
+            upstream.status >= 400 && upstream.status < 500
+              ? upstream.status
+              : 502
+          )
+          .json(upstream.payload || { error: 'Platform API indisponível' });
+        return;
+      }
+      res.set('Cache-Control', 'private, max-age=30');
+      res.status(200).json(upstream.payload || []);
+    } catch (error) {
+      const message =
+        error && error.message === 'PLATFORM_API_TIMEOUT'
+          ? 'Platform API excedeu o timeout'
+          : 'Platform API indisponível';
+      res.status(502).json({ error: message });
+    }
+  });
+
   app.get('/api/search', async (req, res) => {
     const query = String(req.query.q || '').trim();
     if (query.length < 2 || query.length > 120) {

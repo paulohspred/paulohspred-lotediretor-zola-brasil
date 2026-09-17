@@ -1,0 +1,31 @@
+<section data-test-legal-source-evidence {{did-insert this.load}}>
+  <h3 class="header-medium">Base legal versionada</h3>
+  {{#if this.loading}}
+    <p class="text-small">Carregando proveniência da Platform API…</p>
+  {{else if this.errorMessage}}
+    <p class="callout warning text-small" data-test-platform-evidence-error>
+      A proveniência versionada está temporariamente indisponível. Mapa e relatório atual continuam operando.
+    </p>
+  {{else if this.evidence}}
+    <div class="callout secondary text-small" data-test-platform-evidence>
+      <strong>{{this.evidence.valueText}}</strong>
+      <div>Fonte: {{this.evidence.snapshot.authority}}</div>
+      <div>Status: {{this.evidence.statusLabel}}</div>
+      <div>Snapshot SHA-256: <code>{{this.evidence.snapshot.sha256}}</code></div>
+      {{#if this.citation.sourceUrl}}
+        <div>
+          <a href={{this.citation.sourceUrl}} target="_blank" rel="noopener noreferrer">
+            Abrir fonte oficial
+          </a>
+        </div>
+      {{/if}}
+    </div>
+    <p class="text-small">
+      Esta evidência confirma somente a identidade do documento capturado. Ela não afirma, por si só, quais parâmetros legais se aplicam ao imóvel ativo.
+    </p>
+  {{else}}
+    <p class="callout secondary text-small" data-test-platform-evidence-empty>
+      Ainda não há evidência legal versionada disponível para esta fonte.
+    </p>
+  {{/if}}
+</section>
