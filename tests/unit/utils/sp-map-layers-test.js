@@ -33,4 +33,25 @@ module('Unit | Utility | sp-map-layers', function () {
       'aerea_atual',
     ]);
   });
+
+  test('catalogue includes topography layers with elevation labels', function (assert) {
+    const topography = SP_LAYER_GROUPS.find(
+      (group) => group.id === 'topografia'
+    );
+    assert.ok(topography, 'topography group exists');
+    assert.deepEqual(
+      topography.layers.map((layer) => layer.id),
+      ['curva_mestra', 'curva_intermediaria', 'ponto_cotado', 'declividade']
+    );
+    assert.strictEqual(
+      topography.layers.find((layer) => layer.id === 'curva_mestra')
+        .labelProperty,
+      'cd_numero_isovalor'
+    );
+    assert.strictEqual(
+      topography.layers.find((layer) => layer.id === 'ponto_cotado')
+        .labelProperty,
+      'cd_altitude'
+    );
+  });
 });

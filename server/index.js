@@ -252,6 +252,56 @@ const MAP_LAYER_EXTRA = [
     titleKeys: ['cd_original_setor_censitario'],
   },
   {
+    key: 'curva_mestra',
+    label: 'Curvas de nível — mestras',
+    typeName: 'curva_mestra',
+    geometryProperty: 'ge_linha',
+    fields: [
+      'cd_identificador',
+      'cd_numero_isovalor',
+      'tx_escala',
+      'cd_tipo_curva_nivel',
+      'dt_atualizacao',
+    ],
+    titleKeys: [],
+  },
+  {
+    key: 'curva_intermediaria',
+    label: 'Curvas de nível — intermediárias',
+    typeName: 'curva_intermediaria',
+    geometryProperty: 'ge_linha',
+    fields: [
+      'cd_identificador',
+      'cd_numero_isovalor',
+      'tx_escala',
+      'cd_tipo_curva_nivel',
+      'dt_atualizacao',
+    ],
+    titleKeys: [],
+  },
+  {
+    key: 'ponto_cotado',
+    label: 'Pontos cotados',
+    typeName: 'ponto_cotado',
+    geometryProperty: 'ge_ponto',
+    fields: ['cd_identificador', 'cd_altitude', 'tx_escala', 'dt_atualizacao'],
+    titleKeys: [],
+  },
+  {
+    key: 'declividade',
+    label: 'Declividade',
+    typeName: 'declividade',
+    geometryProperty: 'ge_poligono',
+    fields: [
+      'cd_identificador',
+      'cd_classe_declividade',
+      'nm_classe_declividade',
+      'area_declividade',
+      'dt_carga',
+    ],
+    titleKeys: ['nm_classe_declividade'],
+  },
+  {
     key: 'edificacoes_3d',
     label: 'Edificações 3D — altura oficial',
     typeName: 'edificacao',
@@ -432,6 +482,12 @@ function labelForField(field) {
     nm_macroarea: 'Macroárea',
     cd_quadricula: 'Quadrícula',
     cd_levantamento: 'Levantamento',
+    cd_numero_isovalor: 'Cota',
+    cd_altitude: 'Altitude',
+    cd_tipo_curva_nivel: 'Tipo de curva',
+    cd_classe_declividade: 'Classe de declividade',
+    nm_classe_declividade: 'Faixa de declividade',
+    area_declividade: 'Área da faixa',
     qt_altura_edificacao: 'Altura da edificação',
     qt_area_projecao_beiral: 'Área de projeção do beiral',
     tx_escala: 'Escala',
@@ -446,7 +502,12 @@ function labelForField(field) {
 }
 
 function formatTerritorialValue(field, value) {
-  if (field === 'qt_profundidade_maxima' || field === 'qt_cota_inundacao') {
+  if (
+    field === 'qt_profundidade_maxima' ||
+    field === 'qt_cota_inundacao' ||
+    field === 'cd_numero_isovalor' ||
+    field === 'cd_altitude'
+  ) {
     return `${value} m`;
   }
   if (field === 'qt_tempo_retorno') return `${value} anos`;
@@ -944,9 +1005,9 @@ module.exports = function (app) {
       res.set('Cache-Control', 'public, max-age=45');
       res.status(200).json(payload);
     } catch (error) {
-      res
-        .status(502)
-        .json({ error: error.message || 'Falha ao consultar camada GeoSampa' });
+      res.status(502).json({
+        error: error.message || 'Falha ao consultar camada LoteDiretor',
+      });
     }
   });
 

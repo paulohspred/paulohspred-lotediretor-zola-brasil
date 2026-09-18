@@ -81,6 +81,11 @@ Pendente:
 
 **Objetivo:** transformar o lote 2D em um modelo técnico de terreno.
 
+**Em implementação:**
+- catálogo de mapa com curvas de nível mestras e intermediárias, pontos cotados e classes de declividade;
+- cotas/altitudes rotuladas em metros diretamente no mapa;
+- fonte topográfica municipal registrada no Source Registry para proveniência e evolução posterior para MDT/TIN.
+
 Dados e modelo:
 - Modelo Digital do Terreno por lote + entorno;
 - TIN/grade raster versionada;

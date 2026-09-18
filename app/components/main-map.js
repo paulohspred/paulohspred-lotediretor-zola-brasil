@@ -341,7 +341,7 @@ export default class MainMap extends Component {
           minzoom: layer.minZoom,
           paint: {
             'line-color': color,
-            'line-width': 2.2,
+            'line-width': layer.lineWidth || 2.2,
             'line-opacity': 0.85,
           },
         });
@@ -352,10 +352,32 @@ export default class MainMap extends Component {
           source: sourceId,
           minzoom: layer.minZoom,
           paint: {
-            'circle-radius': 5,
+            'circle-radius': layer.circleRadius || 5,
             'circle-color': color,
             'circle-stroke-color': '#ffffff',
             'circle-stroke-width': 1,
+          },
+        });
+      }
+      if (layer.labelProperty) {
+        map.addLayer({
+          id: `${sourceId}-label`,
+          type: 'symbol',
+          source: sourceId,
+          minzoom: layer.minZoom,
+          layout: {
+            'symbol-placement': layer.kind === 'line' ? 'line' : 'point',
+            'text-field': [
+              'concat',
+              ['to-string', ['get', layer.labelProperty]],
+              layer.labelSuffix || '',
+            ],
+            'text-size': 11,
+            'text-allow-overlap': false,
+          },
+          paint: {
+            'text-halo-color': '#ffffff',
+            'text-halo-width': 1.5,
           },
         });
       }
@@ -389,11 +411,17 @@ export default class MainMap extends Component {
       const sourceId = this.ensureSpMapLayer(map, layer);
       const visible =
         active.includes(layer.id) && map.getZoom() >= layer.minZoom && spanOk;
-      ['fill', 'line', 'point', 'extrusion', 'raster'].forEach((suffix) => {
-        const id = `${sourceId}-${suffix}`;
-        if (map.getLayer(id))
-          map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
-      });
+      ['fill', 'line', 'point', 'extrusion', 'raster', 'label'].forEach(
+        (suffix) => {
+          const id = `${sourceId}-${suffix}`;
+          if (map.getLayer(id))
+            map.setLayoutProperty(
+              id,
+              'visibility',
+              visible ? 'visible' : 'none'
+            );
+        }
+      );
       if (!visible) {
         const controller = this.spLayerControllers.get(layer.id);
         if (controller) controller.abort();
