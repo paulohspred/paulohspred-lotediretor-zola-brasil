@@ -52,3 +52,22 @@ jobs:
         env:
           CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
         run: yarn test
+
+  production-smoke:
+    name: "Production Web Smoke"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+          cache: yarn
+      - name: Install Dependencies
+        run: yarn install --frozen-lockfile
+      - name: Build production bundle
+        run: yarn build
+      - name: Verify production server and deep links
+        run: scripts/web-production-smoke.sh

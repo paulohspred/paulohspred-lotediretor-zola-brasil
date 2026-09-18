@@ -34,11 +34,18 @@ Concluído:
 - remover branding e atalhos de saída dos fluxos principais;
 - concentrar cadastro, zoneamento, estrutura territorial e risco dentro do Plano Diretor.
 
+Concluído:
+- deep links e refresh servidos pelo fallback SPA;
+- build de produção em dist/;
+- servidor Node de produção na porta 4200;
+- serviço lotediretor-web.service supervisionado por systemd;
+- health endpoint com commit executado;
+- smoke de produção incorporado ao CI;
+- script de deploy reproduzível.
+
 Pendente:
-- corrigir deep links/refresh;
-- substituir o servidor de desenvolvimento por build/release reproduzível;
-- serviço supervisionado, rollback e release identificada por commit;
-- mapa-base white-label/licenciado sem dependência de créditos de terceiros na experiência principal.
+- mapa-base white-label/licenciado sem dependência de créditos de terceiros na experiência principal;
+- TLS/domínio definitivo e rotação dos segredos default antes de classificar o ambiente como produção pública.
 
 ## Fase 1 — Plano Diretor operacional por qualquer terreno
 

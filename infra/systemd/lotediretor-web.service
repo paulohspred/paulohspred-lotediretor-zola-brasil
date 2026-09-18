@@ -1,0 +1,30 @@
+[Unit]
+Description=LoteDiretor web application
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=sentinelx
+Group=sentinelx
+WorkingDirectory=/srv/lotediretor-zola-brasil
+Environment=NODE_ENV=production
+Environment=HOST=0.0.0.0
+Environment=PORT=4200
+Environment=PLATFORM_API_URL=http://127.0.0.1:54000
+Environment=PATH=/srv/lotediretor-runtime/node-v18.16.0-linux-x64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/srv/lotediretor-runtime/node-v18.16.0-linux-x64/bin/node /srv/lotediretor-zola-brasil/server/production.js
+Restart=always
+RestartSec=3
+TimeoutStopSec=15
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/srv/lotediretor-zola-brasil
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
