@@ -13,7 +13,7 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 | 0 | Fundação | **PARCIAL / RUNTIME + PLATFORM API PROVADOS** | Auth/realm Keycloak, tenant context, app shells e promoção para staging |
 | 1 | Core territorial | **PARCIAL / SP FORTE + SNAPSHOT INGEST + EVIDENCE POR SUJEITO** | ampliar evidências territoriais por imóvel, IBGE nacional, Parcel Resolver genérico, MVT temático e relatório v1 por API |
 | 2 | UX cliente | **PARCIAL / ZOLA MODULAR SHELL + PROVENIÊNCIA** | expandir integração dos módulos com o novo core preservando mapa, busca, camadas e fluxos existentes |
-| 3 | Plano Diretor / Terreno | **PARCIAL / MDT + TIN/GRADE + DECLIVIDADE + CURVAS + PERFIS** | adicionar drenagem, greide/acesso, corte/aterro, envelope e demais análises de engenharia |
+| 3 | Plano Diretor / Terreno | **PARCIAL / MDT + TIN/GRADE + DECLIVIDADE + CURVAS + PERFIS + DRENAGEM** | adicionar greide/acesso, corte/aterro, envelope e demais análises de engenharia |
 | 4 | RE Rural | **NÃO INICIADA** | CAR/SIGEF/SNCR/CIB/IBAMA/INPE + overlaps/monitoring |
 | 5 | AI Core | **NÃO INICIADA** | AI Gateway, ingestão, OpenSearch híbrido, A.I Cidades, tools e evals |
 | 6 | Condomínio | **NÃO INICIADA** | upload privado, regras/atas, A.I Condomínio, dashboard/relatório |
@@ -53,7 +53,8 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 - O Plano Diretor exibe cotas mínima/máxima/média/mediana, amplitude do relevo, densidade de pontos e gradiente/orientação global do plano de melhor ajuste. Esse gradiente é uma síntese do terreno e não equivale a declividade local/máxima nem a levantamento topográfico executivo.
 - O produto `terrain-surface-v2` adiciona TIN recortado, grade de 1 m, declividade local média/mediana/P95/máxima, distribuição por faixas e curvas derivadas de 0,5/1/2/5 m. O Plano Diretor pode sobrepor TIN/declividade e o intervalo de curva escolhido no mapa, enquanto o manifesto versionado continua preservado no Data Plane.
 - A maior declividade local é apresentada como amostra de grade sensível à microtopografia; P95, distribuição, gradiente global e o método de cálculo permanecem visíveis para evitar transformar um pico isolado em conclusão de projeto.
-- O produto `terrain-surface-v3` acrescenta perfil principal e transversal automáticos, diagramas cota × distância, linhas de perfil no mapa e cálculo de cota sob o cursor a partir do plano interpolado de cada célula TIN.
+- O produto `terrain-surface-v4` inclui perfil principal e transversal automáticos, diagramas cota × distância, linhas de perfil no mapa e cálculo de cota sob o cursor a partir do plano interpolado de cada célula TIN.
+- A v4 também adiciona drenagem preliminar do relevo: direção preferencial, sub-bacias internas, divisores aproximados, linhas de escoamento, saídas e triagem de depressões. Esses resultados são screening topográfico e não substituem projeto hidrológico/hidráulico.
 - Object storage imutável para artefatos brutos e relatórios.
 - Valkey para cache/locks; NATS JetStream para eventos; OpenSearch para busca documental.
 - Martin MVT sobre views seguras.

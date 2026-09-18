@@ -15,6 +15,14 @@ const CONTOUR_LAYER_ID = 'lotediretor-terrain-contours-line';
 const CONTOUR_LABEL_LAYER_ID = 'lotediretor-terrain-contours-label';
 const PROFILE_SOURCE_ID = 'lotediretor-terrain-profiles';
 const PROFILE_LAYER_ID = 'lotediretor-terrain-profiles-line';
+const BASIN_SOURCE_ID = 'lotediretor-terrain-basins';
+const BASIN_LAYER_ID = 'lotediretor-terrain-basins-fill';
+const DIVIDE_SOURCE_ID = 'lotediretor-terrain-divides';
+const DIVIDE_LAYER_ID = 'lotediretor-terrain-divides-line';
+const FLOW_SOURCE_ID = 'lotediretor-terrain-flow-paths';
+const FLOW_LAYER_ID = 'lotediretor-terrain-flow-paths-line';
+const OUTLET_SOURCE_ID = 'lotediretor-terrain-outlets';
+const OUTLET_LAYER_ID = 'lotediretor-terrain-outlets-circle';
 
 const ORDER = [
   'SP_LOT_TERRAIN_ELEVATION_MIN',
@@ -35,6 +43,12 @@ const ORDER = [
   'SP_LOT_TERRAIN_PROFILE_PRINCIPAL_GRADE',
   'SP_LOT_TERRAIN_PROFILE_TRANSVERSAL_LENGTH',
   'SP_LOT_TERRAIN_PROFILE_TRANSVERSAL_GRADE',
+  'SP_LOT_TERRAIN_RUNOFF_DIRECTION',
+  'SP_LOT_TERRAIN_DRAINAGE_BASIN_COUNT',
+  'SP_LOT_TERRAIN_MAIN_INTERNAL_BASIN_AREA',
+  'SP_LOT_TERRAIN_MAIN_OUTLET_ELEVATION',
+  'SP_LOT_TERRAIN_DEPRESSION_MAX_FILL_DEPTH',
+  'SP_LOT_TERRAIN_DEPRESSION_FILL_VOLUME',
   'SP_LOT_TERRAIN_BEST_FIT_RMSE',
 ];
 
@@ -95,6 +109,8 @@ export default class TerrainAnalysisEvidenceComponent extends Component {
 
   @tracked showContours = true;
 
+  @tracked showHydrology = true;
+
   @tracked cursorSample = null;
 
   requestVersion = 0;
@@ -128,6 +144,29 @@ export default class TerrainAnalysisEvidenceComponent extends Component {
       triangleCount: product.surface.tinTriangleCount,
       gridResolutionM: product.surface.grid?.resolutionM,
       contourIntervalM: product.surface.contourIntervalM,
+    };
+  }
+
+  get hydrologySummary() {
+    const hydrology = this.terrainProduct?.surface?.hydrology;
+    if (!hydrology) return null;
+    const direction = Number(hydrology.preferredRunoffDirectionDegrees);
+    return {
+      direction: Number.isFinite(direction)
+        ? `${direction.toFixed(1)}° ${
+            hydrology.preferredRunoffDirectionLabel || ''
+          }`.trim()
+        : 'NÃO DISPONÍVEL',
+      basinCount: hydrology.basinCount,
+      outletCount: hydrology.outletCount,
+      mainAreaM2: Number(hydrology.mainInternalBasinApproxAreaM2).toFixed(2),
+      outletElevationM: Number(hydrology.mainOutlet?.elevationM).toFixed(3),
+      depressionDepthM: Number(
+        hydrology.depressionScreening?.maxFillDepthM || 0
+      ).toFixed(3),
+      depressionVolumeM3: Number(
+        hydrology.depressionScreening?.estimatedFillVolumeM3 || 0
+      ).toFixed(3),
     };
   }
 
@@ -226,11 +265,19 @@ export default class TerrainAnalysisEvidenceComponent extends Component {
       map.off('mouseleave', TIN_LAYER_ID, this.onTerrainMouseLeave);
     }
     this.cursorSample = null;
+    removeLayer(map, OUTLET_LAYER_ID);
+    removeLayer(map, FLOW_LAYER_ID);
+    removeLayer(map, DIVIDE_LAYER_ID);
+    removeLayer(map, BASIN_LAYER_ID);
     removeLayer(map, PROFILE_LAYER_ID);
     removeLayer(map, CONTOUR_LABEL_LAYER_ID);
     removeLayer(map, CONTOUR_LAYER_ID);
     removeLayer(map, TIN_OUTLINE_LAYER_ID);
     removeLayer(map, TIN_LAYER_ID);
+    removeSource(map, OUTLET_SOURCE_ID);
+    removeSource(map, FLOW_SOURCE_ID);
+    removeSource(map, DIVIDE_SOURCE_ID);
+    removeSource(map, BASIN_SOURCE_ID);
     removeSource(map, PROFILE_SOURCE_ID);
     removeSource(map, CONTOUR_SOURCE_ID);
     removeSource(map, TIN_SOURCE_ID);
@@ -317,6 +364,84 @@ export default class TerrainAnalysisEvidenceComponent extends Component {
       if (typeof map.on === 'function') {
         map.on('mousemove', TIN_LAYER_ID, this.onTerrainMouseMove);
         map.on('mouseleave', TIN_LAYER_ID, this.onTerrainMouseLeave);
+      }
+    }
+
+    const { hydrology } = product.surface;
+    if (this.showHydrology && hydrology) {
+      if (hydrology.basins?.features?.length) {
+        map.addSource(BASIN_SOURCE_ID, {
+          type: 'geojson',
+          data: hydrology.basins,
+        });
+        map.addLayer({
+          id: BASIN_LAYER_ID,
+          type: 'fill',
+          source: BASIN_SOURCE_ID,
+          paint: {
+            'fill-color': [
+              'step',
+              ['get', 'rank'],
+              '#bbdefb',
+              2,
+              '#c5e1a5',
+              3,
+              '#ffe082',
+              4,
+              '#d1c4e9',
+            ],
+            'fill-opacity': 0.2,
+          },
+        });
+      }
+      if (hydrology.divides?.features?.length) {
+        map.addSource(DIVIDE_SOURCE_ID, {
+          type: 'geojson',
+          data: hydrology.divides,
+        });
+        map.addLayer({
+          id: DIVIDE_LAYER_ID,
+          type: 'line',
+          source: DIVIDE_SOURCE_ID,
+          paint: {
+            'line-color': '#37474f',
+            'line-width': 1,
+            'line-dasharray': [2, 2],
+          },
+        });
+      }
+      if (hydrology.flowPaths?.features?.length) {
+        map.addSource(FLOW_SOURCE_ID, {
+          type: 'geojson',
+          data: hydrology.flowPaths,
+        });
+        map.addLayer({
+          id: FLOW_LAYER_ID,
+          type: 'line',
+          source: FLOW_SOURCE_ID,
+          paint: {
+            'line-color': '#0277bd',
+            'line-width': 2.8,
+            'line-opacity': 0.9,
+          },
+        });
+      }
+      if (hydrology.outlets?.features?.length) {
+        map.addSource(OUTLET_SOURCE_ID, {
+          type: 'geojson',
+          data: hydrology.outlets,
+        });
+        map.addLayer({
+          id: OUTLET_LAYER_ID,
+          type: 'circle',
+          source: OUTLET_SOURCE_ID,
+          paint: {
+            'circle-radius': 5,
+            'circle-color': '#01579b',
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-width': 1.5,
+          },
+        });
       }
     }
 
@@ -482,6 +607,11 @@ export default class TerrainAnalysisEvidenceComponent extends Component {
 
   @action toggleContours(event) {
     this.showContours = event.target.checked;
+    this.renderMapOverlay();
+  }
+
+  @action toggleHydrology(event) {
+    this.showHydrology = event.target.checked;
     this.renderMapOverlay();
   }
 

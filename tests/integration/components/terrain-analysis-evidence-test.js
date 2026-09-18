@@ -160,6 +160,80 @@ class PlatformApiStub extends Service {
           ],
         },
         contourIntervalM,
+        hydrology: {
+          preferredRunoffDirectionDegrees: 45,
+          preferredRunoffDirectionLabel: 'NE',
+          basinCount: 2,
+          outletCount: 2,
+          mainInternalBasinApproxAreaM2: 120,
+          mainOutlet: { elevationM: 724.9 },
+          depressionScreening: {
+            maxFillDepthM: 0.12,
+            estimatedFillVolumeM3: 0.4,
+          },
+          basins: {
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                geometry: {
+                  type: 'Polygon',
+                  coordinates: [
+                    [
+                      [-46.7, -23.5],
+                      [-46.69, -23.5],
+                      [-46.69, -23.49],
+                      [-46.7, -23.5],
+                    ],
+                  ],
+                },
+                properties: { rank: 1 },
+              },
+            ],
+          },
+          divides: {
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                geometry: {
+                  type: 'LineString',
+                  coordinates: [
+                    [-46.7, -23.5],
+                    [-46.695, -23.495],
+                  ],
+                },
+                properties: {},
+              },
+            ],
+          },
+          flowPaths: {
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                geometry: {
+                  type: 'LineString',
+                  coordinates: [
+                    [-46.699, -23.499],
+                    [-46.69, -23.49],
+                  ],
+                },
+                properties: { rank: 1 },
+              },
+            ],
+          },
+          outlets: {
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                geometry: { type: 'Point', coordinates: [-46.69, -23.49] },
+                properties: { rank: 1 },
+              },
+            ],
+          },
+        },
         profiles: {
           spacingM: 0.5,
           principal: {
@@ -244,6 +318,10 @@ module('Integration | Component | terrain-analysis-evidence', function (hooks) {
     assert.dom('[data-test-terrain-map-controls]').exists();
     assert.ok(map.getLayer('lotediretor-terrain-slope-fill'));
     assert.ok(map.getLayer('lotediretor-terrain-contours-line'));
+    assert.dom('[data-test-terrain-hydrology]').includesText('45.0° NE');
+    assert.ok(map.getLayer('lotediretor-terrain-basins-fill'));
+    assert.ok(map.getLayer('lotediretor-terrain-flow-paths-line'));
+    assert.ok(map.getLayer('lotediretor-terrain-outlets-circle'));
     assert.dom('[data-test-terrain-profiles]').exists();
     assert.dom('[data-test-terrain-profile="principal"]').exists();
     assert.dom('[data-test-terrain-profile="transversal"]').exists();
@@ -288,6 +366,12 @@ module('Integration | Component | terrain-analysis-evidence', function (hooks) {
     assert.notOk(map.getSource('lotediretor-terrain-contours'));
     assert.notOk(map.getLayer('lotediretor-terrain-profiles-line'));
     assert.notOk(map.getSource('lotediretor-terrain-profiles'));
+    assert.notOk(map.getLayer('lotediretor-terrain-basins-fill'));
+    assert.notOk(map.getSource('lotediretor-terrain-basins'));
+    assert.notOk(map.getLayer('lotediretor-terrain-flow-paths-line'));
+    assert.notOk(map.getSource('lotediretor-terrain-flow-paths'));
+    assert.notOk(map.getLayer('lotediretor-terrain-outlets-circle'));
+    assert.notOk(map.getSource('lotediretor-terrain-outlets'));
   });
 
   test('it does not queue terrain before base materialization succeeds', async function (assert) {

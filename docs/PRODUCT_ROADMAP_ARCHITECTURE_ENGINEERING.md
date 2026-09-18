@@ -91,7 +91,7 @@ Pendente:
 - evidências calculadas de cota mínima, máxima, média, mediana, amplitude, quantidade/densidade de pontos, declividade/inclinação global do plano de melhor ajuste, orientação descendente e RMSE;
 - citações, proveniência para a geometria do lote e quality assessment técnico em cada métrica;
 - Plano Diretor acompanha a fila topográfica separadamente e exibe os resultados sem bloquear cadastro, zoneamento ou riscos quando a topografia falha.
-- superfície técnica versionada `terrain-surface-v3` com TIN recortado ao lote e grade interpolada de 1 m;
+- superfície técnica versionada `terrain-surface-v4` com TIN recortado ao lote e grade interpolada de 1 m;
 - declividade local média, mediana, P95, maior amostra e distribuição descritiva nas faixas 0–5%, 5–15%, 15–30% e ≥30%;
 - curvas de nível derivadas configuráveis em 0,5 m / 1 m / 2 m / 5 m quando a amplitude do lote contém o nível correspondente;
 - endpoint de produto topográfico que serve apenas o intervalo de curva solicitado, TIN e grade do snapshot mais recente;
@@ -99,9 +99,12 @@ Pendente:
 - perfis automáticos principal e transversal definidos pela geometria do lote, amostrados a cada 0,5 m e apresentados como diagramas cota × distância;
 - linhas dos perfis desenhadas sobre o lote para relacionar o diagrama à geometria analisada;
 - consulta de cota sob o cursor diretamente no TIN, com interpolação do plano da célula e indicação simultânea da declividade local.
+- drenagem preliminar derivada do relevo com preenchimento hidrológico para roteamento, direção D8, direção preferencial de escoamento, saídas do lote, sub-bacias internas e linha principal de escoamento;
+- divisores internos aproximados entre sub-bacias e pontos de saída renderizados no mapa;
+- triagem de depressões com profundidade máxima de preenchimento e volume equivalente aproximado;
+- camada de drenagem explicitamente tratada como screening do MDT, sem chuva de projeto, infiltração, redes, meio-fio, muros ou terraplenagem futura.
 
 **Ainda pendente nesta fase:**
-- talvegues/divisores, direção preferencial de escoamento, drenagem e bacias de contribuição;
 - greide da rua, diferença de nível de acesso e áreas potencialmente críticas para rampas;
 - platôs, estimativas de corte/aterro, balanço de massas e contenções preliminares;
 - exportações técnicas DXF/CSV/LandXML e evolução do produto de grade para formatos raster de engenharia quando necessário.

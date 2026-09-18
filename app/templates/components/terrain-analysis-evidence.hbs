@@ -36,6 +36,10 @@
           Curvas derivadas
         </label>
         <label>
+          <input type="checkbox" checked={{this.showHydrology}} {{on "change" this.toggleHydrology}} />
+          Escoamento e sub-bacias
+        </label>
+        <label>
           Intervalo das curvas
           <select data-test-terrain-contour-interval {{on "change" this.changeContourInterval}}>
             <option value="0.5" selected={{eq this.contourInterval "0.5"}}>0,5 m</option>
@@ -44,6 +48,16 @@
             <option value="5" selected={{eq this.contourInterval "5"}}>5 m</option>
           </select>
         </label>
+      </div>
+    {{/if}}
+
+    {{#if this.hydrologySummary}}
+      <div class="callout secondary text-small" data-test-terrain-hydrology>
+        <strong>Drenagem preliminar do terreno</strong>
+        <div>Direção preferencial {{this.hydrologySummary.direction}} · {{this.hydrologySummary.basinCount}} sub-bacias · {{this.hydrologySummary.outletCount}} saídas</div>
+        <div>Sub-bacia principal ~{{this.hydrologySummary.mainAreaM2}} m² · saída principal {{this.hydrologySummary.outletElevationM}} m</div>
+        <div>Depressão máxima para roteamento {{this.hydrologySummary.depressionDepthM}} m · volume equivalente {{this.hydrologySummary.depressionVolumeM3}} m³</div>
+        <p>Triagem derivada apenas do relevo. Não considera chuva de projeto, infiltração, tubulações, meio-fio, muros, pavimentação ou futura terraplenagem.</p>
       </div>
     {{/if}}
 
