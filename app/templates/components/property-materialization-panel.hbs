@@ -1,0 +1,41 @@
+<section
+  data-test-property-materialization
+  {{did-insert this.load}}
+  {{did-update this.load @propertyId}}
+  {{will-destroy this.invalidate}}
+>
+  {{#if this.isProcessing}}
+    <div
+      class="callout primary text-small"
+      data-test-property-materialization-processing
+    >
+      <strong>Preparando análise do terreno…</strong>
+      <div>
+        O LoteDiretor está versionando cadastro, zoneamento, estrutura
+        territorial e riscos deste imóvel.
+      </div>
+    </div>
+  {{else if this.failed}}
+    <div
+      class="callout warning text-small"
+      data-test-property-materialization-failed
+    >
+      <strong>Não foi possível concluir a análise automática.</strong>
+      {{#if this.state.lastError}}
+        <div>{{this.state.lastError}}</div>
+      {{/if}}
+      <button class="button tiny" type="button" {{on "click" this.retry}}>
+        Tentar novamente
+      </button>
+    </div>
+  {{else if this.errorMessage}}
+    <div
+      class="callout warning text-small"
+      data-test-property-materialization-error
+    >
+      {{this.errorMessage}}
+    </div>
+  {{/if}}
+
+  {{yield this.revision this.state}}
+</section>

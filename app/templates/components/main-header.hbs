@@ -16,7 +16,7 @@
           class="site-module-nav show-for-medium"
           aria-label="Módulos LoteDiretor"
         >
-          <LinkTo @route="plano-diretor">Plano Diretor</LinkTo>
+          <LinkTo @route="plano-diretor" @query={{hash imovel=this.activeProperty.id}}>Plano Diretor</LinkTo>
           <LinkTo @route="rural">Rural</LinkTo>
           <LinkTo @route="condominio">Condomínio</LinkTo>
           <LinkTo @route="solar">Solar</LinkTo>

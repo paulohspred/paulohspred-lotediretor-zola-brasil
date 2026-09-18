@@ -13,7 +13,8 @@
     "snapshot:ingest-geosampa-zoning": "tsx src/ingest-geosampa-zoning-snapshot.ts",
     "snapshot:parse-geosampa-zoning": "tsx src/parse-geosampa-zoning-snapshot.ts",
     "snapshot:ingest-geosampa-territorial": "tsx src/ingest-geosampa-territorial-snapshot.ts",
-    "snapshot:parse-geosampa-territorial": "tsx src/parse-geosampa-territorial-snapshot.ts"
+    "snapshot:parse-geosampa-territorial": "tsx src/parse-geosampa-territorial-snapshot.ts",
+    "worker:materialization": "node dist/materialization-worker.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.888.0",

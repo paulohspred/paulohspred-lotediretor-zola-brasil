@@ -345,6 +345,7 @@ function requestGeoSampa(url) {
       request.destroy(new Error('GEOSAMPA_TIMEOUT'));
     });
     request.on('error', reject);
+    request.end();
   });
 }
 
@@ -683,7 +684,7 @@ async function buildTerritorialAnalysis(nativeGeometry, lotId) {
   };
 }
 
-function requestPlatformApiJson(pathname, query = {}) {
+function requestPlatformApiJson(pathname, query = {}, method = 'GET') {
   const url = new URL(pathname, PLATFORM_API_URL);
   Object.entries(query).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
@@ -693,9 +694,9 @@ function requestPlatformApiJson(pathname, query = {}) {
   const transport = url.protocol === 'https:' ? https : http;
 
   return new Promise((resolve, reject) => {
-    const request = transport.get(
+    const request = transport.request(
       url,
-      { headers: { Accept: 'application/json' } },
+      { method, headers: { Accept: 'application/json' } },
       (response) => {
         const chunks = [];
         let byteSize = 0;
@@ -724,6 +725,7 @@ function requestPlatformApiJson(pathname, query = {}) {
       request.destroy(new Error('PLATFORM_API_TIMEOUT'));
     });
     request.on('error', reject);
+    request.end();
   });
 }
 
@@ -745,6 +747,43 @@ function platformEvidenceQuery(query) {
 }
 
 module.exports = function (app) {
+  app.get(
+    '/api/platform/properties/:lotId/materialization',
+    async (req, res) => {
+      try {
+        const upstream = await requestPlatformApiJson(
+          `/api/v1/properties/${encodeURIComponent(
+            req.params.lotId
+          )}/materialization`,
+          { municipalityIbge: req.query.municipalityIbge || '3550308' }
+        );
+        res.set('Cache-Control', 'no-store');
+        res.status(upstream.status).json(upstream.payload || {});
+      } catch (_error) {
+        res.status(502).json({ error: 'Platform API indisponível' });
+      }
+    }
+  );
+
+  app.post('/api/platform/properties/:lotId/materialize', async (req, res) => {
+    try {
+      const upstream = await requestPlatformApiJson(
+        `/api/v1/properties/${encodeURIComponent(
+          req.params.lotId
+        )}/materialize`,
+        {
+          municipalityIbge: req.query.municipalityIbge || '3550308',
+          force: req.query.force,
+        },
+        'POST'
+      );
+      res.set('Cache-Control', 'no-store');
+      res.status(upstream.status).json(upstream.payload || {});
+    } catch (_error) {
+      res.status(502).json({ error: 'Platform API indisponível' });
+    }
+  });
+
   app.get('/api/platform/evidence', async (req, res) => {
     try {
       const upstream = await requestPlatformApiJson(
@@ -761,7 +800,7 @@ module.exports = function (app) {
           .json(upstream.payload || { error: 'Platform API indisponível' });
         return;
       }
-      res.set('Cache-Control', 'private, max-age=30');
+      res.set('Cache-Control', 'no-store');
       res.status(200).json(upstream.payload || []);
     } catch (error) {
       const message =

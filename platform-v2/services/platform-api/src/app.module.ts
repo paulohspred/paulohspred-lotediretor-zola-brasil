@@ -5,6 +5,7 @@ import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 import { EvidenceModule } from './evidence/evidence.module';
 import { SourceRegistryModule } from './sources/source-registry.module';
+import { MaterializationModule } from './materialization/materialization.module';
 import { SourceSnapshotModule } from './snapshots/source-snapshot.module';
 
 @Module({
@@ -14,6 +15,7 @@ import { SourceSnapshotModule } from './snapshots/source-snapshot.module';
     EvidenceModule,
     SourceRegistryModule,
     SourceSnapshotModule,
+    MaterializationModule,
     GraphQLModule.forRoot<MercuriusDriverConfig>({
       driver: MercuriusDriver,
       autoSchemaFile: true,

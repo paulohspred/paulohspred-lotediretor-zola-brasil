@@ -62,6 +62,21 @@ Pendente:
 
 **Gate:** selecionar um lote nunca pode depender de execução manual de worker.
 
+**Implementado e comprovado em São Paulo:**
+- materialização sob demanda por lote com fila persistente no Postgres;
+- worker permanente supervisionado pelo Docker Compose com retries e recuperação de jobs interrompidos;
+- estados `UNREQUESTED` / `QUEUED` / `RUNNING` / `SUCCEEDED` / `FAILED` expostos pela Platform API;
+- Plano Diretor dispara o processamento automaticamente, acompanha o job e recarrega evidências sem bloquear o mapa ou o relatório legado;
+- cadastro, geometria, zoneamento, macrozona, macroárea e risco hidrológico entram no fluxo versionado por terreno;
+- resultado processado sem incidência é distinguido de dado ainda não processado;
+- imóvel ativo persistido em URL compartilhável (`/plano-diretor?imovel=<id>`) e restaurado em sessão nova;
+- contratos OpenAPI, smoke da fila, teste de integração Ember e teste end-to-end em bundle de produção.
+
+**Pendente para encerrar todo o escopo desta fase:**
+- política explícita de validade/staleness por tipo de fonte/análise;
+- métricas/alertas operacionais específicos da fila além dos logs e health já existentes.
+
+
 ## Fase 2 — terreno, topografia e engenharia
 
 **Objetivo:** transformar o lote 2D em um modelo técnico de terreno.

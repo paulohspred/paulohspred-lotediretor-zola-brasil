@@ -251,6 +251,73 @@
         ],
         "type": "object"
       },
+      "PropertyMaterializationState": {
+        "properties": {
+          "attemptCount": {
+            "example": 0,
+            "type": "number"
+          },
+          "evidenceCount": {
+            "example": 15,
+            "type": "number"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "jobId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastError": {
+            "type": "string"
+          },
+          "maxAttempts": {
+            "example": 3,
+            "type": "number"
+          },
+          "municipalityIbge": {
+            "example": "3550308",
+            "type": "string"
+          },
+          "requestedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "UNREQUESTED",
+              "QUEUED",
+              "RUNNING",
+              "SUCCEEDED",
+              "FAILED"
+            ],
+            "type": "string"
+          },
+          "subjectId": {
+            "example": "6492402",
+            "type": "string"
+          },
+          "subjectType": {
+            "example": "SP_LOT",
+            "type": "string"
+          }
+        },
+        "required": [
+          "municipalityIbge",
+          "subjectType",
+          "subjectId",
+          "status",
+          "attemptCount",
+          "maxAttempts",
+          "evidenceCount"
+        ],
+        "type": "object"
+      },
       "SourceEndpoint": {
         "properties": {
           "method": {
@@ -623,6 +690,94 @@
         "summary": "Platform API liveness/readiness status",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/v1/properties/{lotId}/materialization": {
+      "get": {
+        "operationId": "MaterializationController_status",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lotId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "municipalityIbge",
+            "required": false,
+            "schema": {
+              "example": "3550308",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PropertyMaterializationState"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Get latest evidence materialization state for one lot",
+        "tags": [
+          "property-materialization"
+        ]
+      }
+    },
+    "/api/v1/properties/{lotId}/materialize": {
+      "post": {
+        "operationId": "MaterializationController_materialize",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lotId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "municipalityIbge",
+            "required": false,
+            "schema": {
+              "example": "3550308",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "force",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PropertyMaterializationState"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Queue idempotent evidence materialization for one lot",
+        "tags": [
+          "property-materialization"
         ]
       }
     },

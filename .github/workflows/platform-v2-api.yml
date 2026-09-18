@@ -3,6 +3,8 @@ on:
   push:
     paths:
       - 'platform-v2/services/platform-api/**'
+      - 'platform-v2/workers/data-pipelines/**'
+      - 'platform-v2/db/platform/**'
       - 'platform-v2/packages/contracts/**'
       - 'platform-v2/infra/docker/**'
       - 'platform-v2/infra/caddy/**'
@@ -15,6 +17,8 @@ on:
   pull_request:
     paths:
       - 'platform-v2/services/platform-api/**'
+      - 'platform-v2/workers/data-pipelines/**'
+      - 'platform-v2/db/platform/**'
       - 'platform-v2/packages/contracts/**'
       - 'platform-v2/infra/docker/**'
       - 'platform-v2/infra/caddy/**'
@@ -32,6 +36,8 @@ jobs:
         run: docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example --profile migrate --profile edge config >/dev/null
       - name: Platform API smoke
         run: sudo ./platform-v2/scripts/platform-api-smoke.sh
+      - name: Verify materialization queue API
+        run: sudo ./platform-v2/scripts/materialization-api-smoke.sh
       - name: Verify versioned contracts
         run: |
           sudo ./platform-v2/scripts/export-contracts.sh

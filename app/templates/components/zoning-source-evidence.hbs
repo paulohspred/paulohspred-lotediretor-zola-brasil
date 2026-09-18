@@ -1,7 +1,7 @@
 <section
   data-test-zoning-source-evidence
   {{did-insert this.load}}
-  {{did-update this.load @propertyId}}
+  {{did-update this.load @propertyId @revision}}
 >
   <h3 class="header-medium">Sobreposição de zoneamento versionada</h3>
   {{#if this.loading}}
@@ -35,7 +35,11 @@
     <p class="text-small">O resultado indica sobreposição geométrica calculada entre a geometria versionada do lote e sua camada territorial versionada de zoneamento. Ele não determina, isoladamente, o enquadramento jurídico nem os parâmetros construtivos aplicáveis.</p>
   {{else if @propertyId}}
     <p class="callout secondary text-small" data-test-zoning-evidence-empty>
-      Ainda não há sobreposição de zoneamento versionada para este imóvel.
+      {{#if (eq @materializationState.status "SUCCEEDED")}}
+        Nenhuma sobreposição de zoneamento foi identificada na versão processada deste imóvel.
+      {{else}}
+        Ainda não há sobreposição de zoneamento versionada para este imóvel.
+      {{/if}}
     </p>
   {{else}}
     <p class="callout secondary text-small" data-test-zoning-evidence-no-property>

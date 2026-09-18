@@ -13,7 +13,7 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 | 0 | Fundação | **PARCIAL / RUNTIME + PLATFORM API PROVADOS** | Auth/realm Keycloak, tenant context, app shells e promoção para staging |
 | 1 | Core territorial | **PARCIAL / SP FORTE + SNAPSHOT INGEST + EVIDENCE POR SUJEITO** | ampliar evidências territoriais por imóvel, IBGE nacional, Parcel Resolver genérico, MVT temático e relatório v1 por API |
 | 2 | UX cliente | **PARCIAL / ZOLA MODULAR SHELL + PROVENIÊNCIA** | expandir integração dos módulos com o novo core preservando mapa, busca, camadas e fluxos existentes |
-| 3 | Plano Diretor / Terreno | **PARCIAL / SHELL + IMÓVEL ATIVO** | consolidar cadastro, regras, riscos e análises de engenharia do terreno em um único módulo |
+| 3 | Plano Diretor / Terreno | **PARCIAL / MATERIALIZAÇÃO AUTOMÁTICA + IMÓVEL ATIVO** | adicionar topografia, relevo, declividade, drenagem, envelope e demais análises de engenharia |
 | 4 | RE Rural | **NÃO INICIADA** | CAR/SIGEF/SNCR/CIB/IBAMA/INPE + overlaps/monitoring |
 | 5 | AI Core | **NÃO INICIADA** | AI Gateway, ingestão, OpenSearch híbrido, A.I Cidades, tools e evals |
 | 6 | Condomínio | **NÃO INICIADA** | upload privado, regras/atas, A.I Condomínio, dashboard/relatório |
@@ -47,6 +47,8 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 - O pipeline territorial por imóvel calcula em PostGIS as interseções de zoneamento, macrozona e macroárea a partir da geometria versionada do lote, com citação, proveniência e métricas de cobertura.
 - Plano Diretor consome, via proxy same-origin read-only, a evidência factual versionada da LPUOS e as sobreposições calculadas de zoneamento, macrozona e macroárea para o imóvel ativo; exibe fonte/hash/citação, método e cobertura sem converter a sobreposição geométrica, isoladamente, em conclusão jurídica ou parâmetro construtivo.
 - Plano Diretor concentra identidade cadastral, regras urbanísticas, estrutura territorial, riscos e diagnóstico técnico do terreno em um único módulo.
+- Materialização por imóvel deixou de depender de execução manual: a Platform API cria jobs idempotentes persistentes, um worker permanente processa cadastro/zoneamento/contexto territorial/risco, e o Plano Diretor acompanha `QUEUED/RUNNING/SUCCEEDED/FAILED` e recarrega as evidências ao concluir.
+- O imóvel ativo pode ser restaurado diretamente por URL (`/plano-diretor?imovel=<id>`), permitindo refresh e compartilhamento do diagnóstico sem perder o contexto territorial.
 - Object storage imutável para artefatos brutos e relatórios.
 - Valkey para cache/locks; NATS JetStream para eventos; OpenSearch para busca documental.
 - Martin MVT sobre views seguras.

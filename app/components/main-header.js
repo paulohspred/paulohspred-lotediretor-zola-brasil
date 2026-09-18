@@ -8,6 +8,8 @@ export default class MainHeaderComponent extends Component {
 
   @service() media;
 
+  @service activeProperty;
+
   @tracked bookmarks;
 
   @tracked savedLayerSets;
