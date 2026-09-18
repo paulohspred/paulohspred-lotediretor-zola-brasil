@@ -9,6 +9,7 @@ on:
       - 'platform-v2/infra/docker/**'
       - 'platform-v2/infra/caddy/**'
       - 'platform-v2/scripts/platform-api-smoke.sh'
+      - 'platform-v2/scripts/materialization-api-smoke.sh'
       - 'platform-v2/scripts/export-contracts.sh'
       - 'platform-v2/package.json'
       - 'platform-v2/pnpm-workspace.yaml'

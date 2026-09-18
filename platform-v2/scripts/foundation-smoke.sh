@@ -13,7 +13,7 @@ python3 -m json.tool platform-v2/data/schemas/source-registry.schema.json >/dev/
 "${COMPOSE[@]}" up -d martin
 
 sources=$("${COMPOSE[@]}" exec -T postgres psql -U lotediretor -d lotediretor_platform -Atc 'SELECT count(*) FROM core.source_registry;')
-[ "$sources" = "9" ] || { echo "expected 9 São Paulo sources, got $sources" >&2; exit 1; }
+[ "$sources" = "10" ] || { echo "expected 10 São Paulo sources, got $sources" >&2; exit 1; }
 
 "${COMPOSE[@]}" exec -T valkey valkey-cli ping | grep -q PONG
 curl -fsS http://127.0.0.1:58222/healthz | grep -q '"status":"ok"'

@@ -781,6 +781,94 @@
         ]
       }
     },
+    "/api/v1/properties/{lotId}/terrain/materialization": {
+      "get": {
+        "operationId": "TerrainMaterializationController_status",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lotId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "municipalityIbge",
+            "required": false,
+            "schema": {
+              "example": "3550308",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PropertyMaterializationState"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Get latest terrain materialization state for one lot",
+        "tags": [
+          "terrain-materialization"
+        ]
+      }
+    },
+    "/api/v1/properties/{lotId}/terrain/materialize": {
+      "post": {
+        "operationId": "TerrainMaterializationController_materialize",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lotId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "municipalityIbge",
+            "required": false,
+            "schema": {
+              "example": "3550308",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "force",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PropertyMaterializationState"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Queue idempotent terrain materialization for one lot",
+        "tags": [
+          "terrain-materialization"
+        ]
+      }
+    },
     "/api/v1/source-snapshots": {
       "get": {
         "operationId": "SourceSnapshotController_list",

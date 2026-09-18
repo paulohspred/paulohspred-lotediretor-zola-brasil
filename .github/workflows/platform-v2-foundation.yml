@@ -29,6 +29,8 @@ jobs:
           docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example --profile bootstrap run --rm minio-init
       - name: Verify source snapshot ingestion
         run: sudo ./platform-v2/scripts/source-snapshot-ingest-smoke.sh
+      - name: Verify terrain LAZ analysis
+        run: sudo bash ./platform-v2/scripts/terrain-analysis-smoke.sh
       - name: Verify GeoSampa lot evidence pipeline
         run: sudo ./platform-v2/scripts/geosampa-lot-evidence-smoke.sh
       - name: Verify GeoSampa zoning evidence pipeline

@@ -126,6 +126,31 @@ services:
     entrypoint: ["node", "workers/data-pipelines/dist/materialization-worker.js"]
     networks: [foundation]
 
+  terrain-materialization-worker:
+    build:
+      context: ../..
+      dockerfile: workers/data-pipelines/Dockerfile
+    image: lotediretor/data-pipelines:dev
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-lotediretor}:${POSTGRES_PASSWORD:-change-me-platform-db}@postgres:5432/${POSTGRES_DB:-lotediretor_platform}
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-lotediretor}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-change-me-minio-secret}
+      S3_SOURCE_BUCKET: sources
+      TERRAIN_MATERIALIZATION_POLL_MS: 2500
+      TERRAIN_MATERIALIZATION_STALE_MINUTES: 30
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    entrypoint: ["node", "workers/data-pipelines/dist/terrain-materialization-worker.js"]
+    networks: [foundation]
+
   migrate-platform:
     image: postgis/postgis:18-3.6
     profiles: ["migrate"]

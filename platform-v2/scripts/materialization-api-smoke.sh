@@ -52,4 +52,33 @@ assert j['status']=='QUEUED', j
 assert j['jobId'], j
 PY
 
-echo "materialization-api-smoke=OK"
+
+curl -fsS "$BASE_URL/api/v1/properties/$LOT_ID/terrain/materialization?municipalityIbge=$MUNICIPALITY_IBGE" \
+  >/tmp/ld-api-terrain-materialization-before.json
+
+python3 - <<'PY'
+import json, os
+j=json.load(open('/tmp/ld-api-terrain-materialization-before.json'))
+assert j['municipalityIbge']==os.environ['MUNICIPALITY_IBGE'], j
+assert j['subjectType']=='SP_LOT', j
+assert j['subjectId']==os.environ['LOT_ID'], j
+assert j['status']=='UNREQUESTED', j
+assert j['evidenceCount']==0, j
+PY
+
+terrain_status="$(
+  curl -sS \
+    -o /tmp/ld-api-terrain-materialization-missing-geometry.json \
+    -w '%{http_code}' \
+    -X POST \
+    "$BASE_URL/api/v1/properties/$LOT_ID/terrain/materialize?municipalityIbge=$MUNICIPALITY_IBGE"
+)"
+test "$terrain_status" = "404"
+
+python3 - <<'PY'
+import json, os
+j=json.load(open('/tmp/ld-api-terrain-materialization-missing-geometry.json'))
+assert str(os.environ['LOT_ID']) in str(j.get('message','')), j
+PY
+
+echo "materialization-api-smoke=OK terrain-prerequisite=OK"

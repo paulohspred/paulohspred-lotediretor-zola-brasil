@@ -30,6 +30,14 @@ assert any(r['sourceCode']=='PMSP_GEOSAMPA_LOTES' for r in rows)
 assert any(r['sourceCode']=='PMSP_TERRITORIO_TOPOGRAFIA' for r in rows)
 PY
 
+curl -fsS 'http://127.0.0.1:54000/api/v1/sources/PMSP_TERRITORIO_TOPOGRAFIA?municipalityIbge=3550308' >/tmp/ld-api-topography-source.json
+python3 - <<'PY'
+import json
+j=json.load(open('/tmp/ld-api-topography-source.json'))
+assert j['sourceCode']=='PMSP_TERRITORIO_TOPOGRAFIA', j
+assert {e['type'] for e in j['endpoints']} >= {'WFS','DOWNLOAD'}, j['endpoints']
+PY
+
 curl -fsS 'http://127.0.0.1:54000/api/v1/sources/PMSP_GEOSAMPA_LOTES?municipalityIbge=3550308' >/tmp/ld-api-source.json
 python3 - <<'PY'
 import json
@@ -115,6 +123,8 @@ assert '/api/v1/source-snapshots' in j['paths']
 assert '/api/v1/source-snapshots/{id}' in j['paths']
 assert '/api/v1/evidence' in j['paths']
 assert '/api/v1/evidence/{id}' in j['paths']
+assert '/api/v1/properties/{lotId}/terrain/materialization' in j['paths']
+assert '/api/v1/properties/{lotId}/terrain/materialize' in j['paths']
 schemas=j.get('components',{}).get('schemas',{})
 assert 'SourceRegistryEntry' in schemas, j.get('components')
 assert 'SourceSnapshotRecord' in schemas, j.get('components')
