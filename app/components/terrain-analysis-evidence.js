@@ -13,6 +13,8 @@ const TIN_OUTLINE_LAYER_ID = 'lotediretor-terrain-slope-outline';
 const CONTOUR_SOURCE_ID = 'lotediretor-terrain-contours';
 const CONTOUR_LAYER_ID = 'lotediretor-terrain-contours-line';
 const CONTOUR_LABEL_LAYER_ID = 'lotediretor-terrain-contours-label';
+const PROFILE_SOURCE_ID = 'lotediretor-terrain-profiles';
+const PROFILE_LAYER_ID = 'lotediretor-terrain-profiles-line';
 
 const ORDER = [
   'SP_LOT_TERRAIN_ELEVATION_MIN',
@@ -29,6 +31,10 @@ const ORDER = [
   'SP_LOT_TERRAIN_SLOPE_DISTRIBUTION',
   'SP_LOT_TERRAIN_POINT_COUNT',
   'SP_LOT_TERRAIN_POINT_DENSITY',
+  'SP_LOT_TERRAIN_PROFILE_PRINCIPAL_LENGTH',
+  'SP_LOT_TERRAIN_PROFILE_PRINCIPAL_GRADE',
+  'SP_LOT_TERRAIN_PROFILE_TRANSVERSAL_LENGTH',
+  'SP_LOT_TERRAIN_PROFILE_TRANSVERSAL_GRADE',
   'SP_LOT_TERRAIN_BEST_FIT_RMSE',
 ];
 
@@ -47,6 +53,12 @@ const LABELS = {
   SP_LOT_TERRAIN_LOCAL_SLOPE_P95: 'Declividade local P95 · grade 1 m',
   SP_LOT_TERRAIN_LOCAL_SLOPE_MAX: 'Maior amostra local · grade 1 m',
   SP_LOT_TERRAIN_SLOPE_DISTRIBUTION: 'Distribuição de declividade',
+  SP_LOT_TERRAIN_PROFILE_PRINCIPAL_LENGTH: 'Comprimento do perfil principal',
+  SP_LOT_TERRAIN_PROFILE_PRINCIPAL_GRADE: 'Greide líquido do perfil principal',
+  SP_LOT_TERRAIN_PROFILE_TRANSVERSAL_LENGTH:
+    'Comprimento do perfil transversal',
+  SP_LOT_TERRAIN_PROFILE_TRANSVERSAL_GRADE:
+    'Greide líquido do perfil transversal',
   SP_LOT_TERRAIN_BEST_FIT_RMSE: 'Erro do plano de ajuste',
 };
 
@@ -83,6 +95,8 @@ export default class TerrainAnalysisEvidenceComponent extends Component {
 
   @tracked showContours = true;
 
+  @tracked cursorSample = null;
+
   requestVersion = 0;
 
   get processing() {
@@ -114,6 +128,51 @@ export default class TerrainAnalysisEvidenceComponent extends Component {
       triangleCount: product.surface.tinTriangleCount,
       gridResolutionM: product.surface.grid?.resolutionM,
       contourIntervalM: product.surface.contourIntervalM,
+    };
+  }
+
+  get profileDiagrams() {
+    const profiles = this.terrainProduct?.surface?.profiles;
+    if (!profiles) return [];
+    return ['principal', 'transversal']
+      .map((key) => this.buildProfileDiagram(profiles[key]))
+      .filter(Boolean);
+  }
+
+  buildProfileDiagram(profile) {
+    const samples = profile?.samples || [];
+    if (samples.length < 2 || !profile.lengthM) return null;
+    const width = 320;
+    const height = 120;
+    const padX = 14;
+    const padY = 14;
+    const elevations = samples.map((sample) => Number(sample.elevationM));
+    const min = Math.min(...elevations);
+    const max = Math.max(...elevations);
+    const range = Math.max(max - min, 0.1);
+    const points = samples
+      .map((sample) => {
+        const x =
+          padX +
+          (Number(sample.distanceM) / Number(profile.lengthM)) *
+            (width - padX * 2);
+        const y =
+          height -
+          padY -
+          ((Number(sample.elevationM) - min) / range) * (height - padY * 2);
+        return `${x.toFixed(2)},${y.toFixed(2)}`;
+      })
+      .join(' ');
+    return {
+      id: profile.id,
+      label: profile.label,
+      lengthM: Number(profile.lengthM).toFixed(2),
+      netGradePercent: Number(profile.netGradePercent).toFixed(2),
+      minElevationM: min.toFixed(3),
+      maxElevationM: max.toFixed(3),
+      points,
+      width,
+      height,
     };
   }
 
@@ -162,13 +221,59 @@ export default class TerrainAnalysisEvidenceComponent extends Component {
   clearMapOverlay() {
     const map = this.mainMap.mapInstance;
     if (!map) return;
+    if (typeof map.off === 'function') {
+      map.off('mousemove', TIN_LAYER_ID, this.onTerrainMouseMove);
+      map.off('mouseleave', TIN_LAYER_ID, this.onTerrainMouseLeave);
+    }
+    this.cursorSample = null;
+    removeLayer(map, PROFILE_LAYER_ID);
     removeLayer(map, CONTOUR_LABEL_LAYER_ID);
     removeLayer(map, CONTOUR_LAYER_ID);
     removeLayer(map, TIN_OUTLINE_LAYER_ID);
     removeLayer(map, TIN_LAYER_ID);
+    removeSource(map, PROFILE_SOURCE_ID);
     removeSource(map, CONTOUR_SOURCE_ID);
     removeSource(map, TIN_SOURCE_ID);
   }
+
+  onTerrainMouseMove = (event) => {
+    const feature = event?.features?.[0];
+    const properties = feature?.properties || {};
+    const longitude = Number(event?.lngLat?.lng);
+    const latitude = Number(event?.lngLat?.lat);
+    const originLon = Number(properties.elevationPlaneOriginLon);
+    const originLat = Number(properties.elevationPlaneOriginLat);
+    const originM = Number(properties.elevationPlaneOriginM);
+    const dzdLon = Number(properties.elevationDzDLon);
+    const dzdLat = Number(properties.elevationDzDLat);
+    if (
+      ![
+        longitude,
+        latitude,
+        originLon,
+        originLat,
+        originM,
+        dzdLon,
+        dzdLat,
+      ].every(Number.isFinite)
+    ) {
+      return;
+    }
+    const elevationM =
+      originM +
+      dzdLon * (longitude - originLon) +
+      dzdLat * (latitude - originLat);
+    this.cursorSample = {
+      elevationM: elevationM.toFixed(3),
+      slopePercent: Number(properties.slopePercent).toFixed(2),
+      longitude: longitude.toFixed(6),
+      latitude: latitude.toFixed(6),
+    };
+  };
+
+  onTerrainMouseLeave = () => {
+    this.cursorSample = null;
+  };
 
   renderMapOverlay(product = this.terrainProduct) {
     const map = this.mainMap.mapInstance;
@@ -207,6 +312,40 @@ export default class TerrainAnalysisEvidenceComponent extends Component {
           'line-color': '#5f6368',
           'line-width': 0.5,
           'line-opacity': 0.45,
+        },
+      });
+      if (typeof map.on === 'function') {
+        map.on('mousemove', TIN_LAYER_ID, this.onTerrainMouseMove);
+        map.on('mouseleave', TIN_LAYER_ID, this.onTerrainMouseLeave);
+      }
+    }
+
+    const { profiles } = product.surface;
+    const profileFeatures = [
+      profiles?.principal?.line,
+      profiles?.transversal?.line,
+    ].filter(Boolean);
+    if (profileFeatures.length) {
+      map.addSource(PROFILE_SOURCE_ID, {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: profileFeatures },
+      });
+      map.addLayer({
+        id: PROFILE_LAYER_ID,
+        type: 'line',
+        source: PROFILE_SOURCE_ID,
+        paint: {
+          'line-color': [
+            'match',
+            ['get', 'profileId'],
+            'principal',
+            '#1565c0',
+            'transversal',
+            '#6a1b9a',
+            '#263238',
+          ],
+          'line-width': 2.5,
+          'line-dasharray': [2, 1],
         },
       });
     }

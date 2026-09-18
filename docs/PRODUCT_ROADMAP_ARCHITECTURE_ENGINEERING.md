@@ -91,14 +91,16 @@ Pendente:
 - evidências calculadas de cota mínima, máxima, média, mediana, amplitude, quantidade/densidade de pontos, declividade/inclinação global do plano de melhor ajuste, orientação descendente e RMSE;
 - citações, proveniência para a geometria do lote e quality assessment técnico em cada métrica;
 - Plano Diretor acompanha a fila topográfica separadamente e exibe os resultados sem bloquear cadastro, zoneamento ou riscos quando a topografia falha.
-- superfície técnica versionada `terrain-surface-v2` com TIN recortado ao lote e grade interpolada de 1 m;
+- superfície técnica versionada `terrain-surface-v3` com TIN recortado ao lote e grade interpolada de 1 m;
 - declividade local média, mediana, P95, maior amostra e distribuição descritiva nas faixas 0–5%, 5–15%, 15–30% e ≥30%;
 - curvas de nível derivadas configuráveis em 0,5 m / 1 m / 2 m / 5 m quando a amplitude do lote contém o nível correspondente;
 - endpoint de produto topográfico que serve apenas o intervalo de curva solicitado, TIN e grade do snapshot mais recente;
 - sobreposição temporária no mapa do Plano Diretor com declividade derivada e curvas, removida ao trocar de imóvel ou sair do módulo.
+- perfis automáticos principal e transversal definidos pela geometria do lote, amostrados a cada 0,5 m e apresentados como diagramas cota × distância;
+- linhas dos perfis desenhadas sobre o lote para relacionar o diagrama à geometria analisada;
+- consulta de cota sob o cursor diretamente no TIN, com interpolação do plano da célula e indicação simultânea da declividade local.
 
 **Ainda pendente nesta fase:**
-- perfis longitudinal/transversal e consulta de cota por cursor sobre a superfície;
 - talvegues/divisores, direção preferencial de escoamento, drenagem e bacias de contribuição;
 - greide da rua, diferença de nível de acesso e áreas potencialmente críticas para rampas;
 - platôs, estimativas de corte/aterro, balanço de massas e contenções preliminares;

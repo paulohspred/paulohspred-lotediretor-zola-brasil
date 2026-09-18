@@ -47,6 +47,34 @@
       </div>
     {{/if}}
 
+    {{#if this.cursorSample}}
+      <div class="callout primary text-small" data-test-terrain-cursor-sample>
+        <strong>Cota sob o cursor</strong>
+        <div>{{this.cursorSample.elevationM}} m · declividade da célula {{this.cursorSample.slopePercent}}%</div>
+        <div>{{this.cursorSample.latitude}}, {{this.cursorSample.longitude}}</div>
+      </div>
+    {{/if}}
+
+    {{#if this.profileDiagrams.length}}
+      <div class="grid-x grid-margin-x small-up-1 medium-up-2" data-test-terrain-profiles>
+        {{#each this.profileDiagrams as |profile|}}
+          <div class="cell">
+            <div class="callout secondary">
+              <strong>{{profile.label}}</strong>
+              <div class="text-small">{{profile.lengthM}} m · greide líquido {{profile.netGradePercent}}%</div>
+              <svg viewBox="0 0 320 120" role="img" aria-label={{profile.label}} data-test-terrain-profile={{profile.id}}>
+                <line x1="14" y1="106" x2="306" y2="106" stroke="currentColor" stroke-width="0.6"></line>
+                <line x1="14" y1="14" x2="14" y2="106" stroke="currentColor" stroke-width="0.6"></line>
+                <polyline points={{profile.points}} fill="none" stroke="currentColor" stroke-width="2"></polyline>
+                <text x="18" y="24" font-size="9">{{profile.maxElevationM}} m</text>
+                <text x="18" y="102" font-size="9">{{profile.minElevationM}} m</text>
+              </svg>
+            </div>
+          </div>
+        {{/each}}
+      </div>
+    {{/if}}
+
     {{#if this.manifestHash}}
       <p class="text-small medium-gray">Modelo versionado · manifesto SHA-256 <code>{{this.manifestHash}}</code></p>
     {{/if}}
