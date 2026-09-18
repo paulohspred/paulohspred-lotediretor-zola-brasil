@@ -13,7 +13,7 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 | 0 | Fundação | **PARCIAL / RUNTIME + PLATFORM API PROVADOS** | Auth/realm Keycloak, tenant context, app shells e promoção para staging |
 | 1 | Core territorial | **PARCIAL / SP FORTE + SNAPSHOT INGEST + EVIDENCE POR SUJEITO** | ampliar evidências territoriais por imóvel, IBGE nacional, Parcel Resolver genérico, MVT temático e relatório v1 por API |
 | 2 | UX cliente | **PARCIAL / ZOLA MODULAR SHELL + PROVENIÊNCIA** | expandir integração dos módulos com o novo core preservando mapa, busca, camadas e fluxos existentes |
-| 3 | Plano Diretor / Terreno | **PARCIAL / MDT 2020 + MATERIALIZAÇÃO AUTOMÁTICA** | adicionar TIN/grade, declividade local, drenagem, perfis, corte/aterro, envelope e demais análises de engenharia |
+| 3 | Plano Diretor / Terreno | **PARCIAL / MDT + TIN/GRADE + DECLIVIDADE LOCAL + CURVAS** | adicionar perfis, drenagem, greide/acesso, corte/aterro, envelope e demais análises de engenharia |
 | 4 | RE Rural | **NÃO INICIADA** | CAR/SIGEF/SNCR/CIB/IBAMA/INPE + overlaps/monitoring |
 | 5 | AI Core | **NÃO INICIADA** | AI Gateway, ingestão, OpenSearch híbrido, A.I Cidades, tools e evals |
 | 6 | Condomínio | **NÃO INICIADA** | upload privado, regras/atas, A.I Condomínio, dashboard/relatório |
@@ -51,6 +51,8 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 - O imóvel ativo pode ser restaurado diretamente por URL (`/plano-diretor?imovel=<id>`), permitindo refresh e compartilhamento do diagnóstico sem perder o contexto territorial.
 - A topografia agora possui fila própria e independente: o worker identifica as folhas MDT 2020 que cobrem o lote, baixa LAZ sob demanda, preserva cada insumo por SHA-256, gera manifesto versionado e publica métricas `SP_LOT_TERRAIN_*` com citações, proveniência e quality assessment.
 - O Plano Diretor exibe cotas mínima/máxima/média/mediana, amplitude do relevo, densidade de pontos e gradiente/orientação global do plano de melhor ajuste. Esse gradiente é uma síntese do terreno e não equivale a declividade local/máxima nem a levantamento topográfico executivo.
+- O produto `terrain-surface-v2` adiciona TIN recortado, grade de 1 m, declividade local média/mediana/P95/máxima, distribuição por faixas e curvas derivadas de 0,5/1/2/5 m. O Plano Diretor pode sobrepor TIN/declividade e o intervalo de curva escolhido no mapa, enquanto o manifesto versionado continua preservado no Data Plane.
+- A maior declividade local é apresentada como amostra de grade sensível à microtopografia; P95, distribuição, gradiente global e o método de cálculo permanecem visíveis para evitar transformar um pico isolado em conclusão de projeto.
 - Object storage imutável para artefatos brutos e relatórios.
 - Valkey para cache/locks; NATS JetStream para eventos; OpenSearch para busca documental.
 - Martin MVT sobre views seguras.

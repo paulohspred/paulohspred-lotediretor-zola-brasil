@@ -91,12 +91,18 @@ Pendente:
 - evidências calculadas de cota mínima, máxima, média, mediana, amplitude, quantidade/densidade de pontos, declividade/inclinação global do plano de melhor ajuste, orientação descendente e RMSE;
 - citações, proveniência para a geometria do lote e quality assessment técnico em cada métrica;
 - Plano Diretor acompanha a fila topográfica separadamente e exibe os resultados sem bloquear cadastro, zoneamento ou riscos quando a topografia falha.
+- superfície técnica versionada `terrain-surface-v2` com TIN recortado ao lote e grade interpolada de 1 m;
+- declividade local média, mediana, P95, maior amostra e distribuição descritiva nas faixas 0–5%, 5–15%, 15–30% e ≥30%;
+- curvas de nível derivadas configuráveis em 0,5 m / 1 m / 2 m / 5 m quando a amplitude do lote contém o nível correspondente;
+- endpoint de produto topográfico que serve apenas o intervalo de curva solicitado, TIN e grade do snapshot mais recente;
+- sobreposição temporária no mapa do Plano Diretor com declividade derivada e curvas, removida ao trocar de imóvel ou sair do módulo.
 
 **Ainda pendente nesta fase:**
-- TIN/grade raster versionada e curvas derivadas configuráveis;
-- declividade local/máxima e distribuição por faixas calculadas a partir da superfície;
-- perfis longitudinal/transversal, talvegues/divisores, drenagem e bacias de contribuição;
-- greide da rua, acessos, platôs e estimativas de corte/aterro.
+- perfis longitudinal/transversal e consulta de cota por cursor sobre a superfície;
+- talvegues/divisores, direção preferencial de escoamento, drenagem e bacias de contribuição;
+- greide da rua, diferença de nível de acesso e áreas potencialmente críticas para rampas;
+- platôs, estimativas de corte/aterro, balanço de massas e contenções preliminares;
+- exportações técnicas DXF/CSV/LandXML e evolução do produto de grade para formatos raster de engenharia quando necessário.
 
 Dados e modelo:
 - Modelo Digital do Terreno por lote + entorno;

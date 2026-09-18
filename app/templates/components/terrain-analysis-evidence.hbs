@@ -1,13 +1,56 @@
-<section class="callout" data-test-terrain-analysis {{did-insert this.load}} {{did-update this.load @propertyId @materializationState.status}} {{will-destroy this.invalidate}}>
+<section
+  class="callout"
+  data-test-terrain-analysis
+  {{did-insert this.load}}
+  {{did-update this.load @propertyId @materializationState.status}}
+  {{will-destroy this.invalidate}}
+>
   <h4>Topografia do terreno</h4>
-  {{#if this.processing}}<p class="text-small" data-test-terrain-processing>Processando modelo altimétrico do terreno…</p>
-  {{else if this.failed}}<p class="text-small">Não foi possível concluir a topografia automática.</p><button class="button tiny" type="button" {{on "click" this.retry}}>Tentar novamente</button>
-  {{else if this.errorMessage}}<p class="text-small alert">{{this.errorMessage}}</p>
+  {{#if this.processing}}
+    <p class="text-small" data-test-terrain-processing>Processando superfície, declividades e curvas do terreno…</p>
+  {{else if this.failed}}
+    <p class="text-small">Não foi possível concluir a topografia automática.</p>
+    <button class="button tiny" type="button" {{on "click" this.retry}}>Tentar novamente</button>
+  {{else if this.errorMessage}}
+    <p class="text-small alert">{{this.errorMessage}}</p>
   {{else if this.displayRows.length}}
-    <div class="grid-x grid-margin-x small-up-1 medium-up-2">{{#each this.displayRows as |row|}}<div class="cell" data-test-terrain-row={{row.evidenceType}}><strong>{{row.label}}</strong><div>{{row.valueText}}{{#if row.unit}} {{row.unit}}{{/if}}</div></div>{{/each}}</div>
+    <div class="grid-x grid-margin-x small-up-1 medium-up-2">
+      {{#each this.displayRows as |row|}}
+        <div class="cell" data-test-terrain-row={{row.evidenceType}}>
+          <strong>{{row.label}}</strong>
+          <div>{{row.valueText}}{{#if row.unit}} {{row.unit}}{{/if}}</div>
+        </div>
+      {{/each}}
+    </div>
+
+    {{#if this.surfaceSummary}}
+      <div class="callout secondary text-small" data-test-terrain-map-controls>
+        <strong>Superfície do terreno no mapa</strong>
+        <div>Grade de {{this.surfaceSummary.gridResolutionM}} m · {{this.surfaceSummary.triangleCount}} células TIN</div>
+        <label>
+          <input type="checkbox" checked={{this.showSlopeSurface}} {{on "change" this.toggleSlopeSurface}} />
+          Declividade derivada
+        </label>
+        <label>
+          <input type="checkbox" checked={{this.showContours}} {{on "change" this.toggleContours}} />
+          Curvas derivadas
+        </label>
+        <label>
+          Intervalo das curvas
+          <select data-test-terrain-contour-interval {{on "change" this.changeContourInterval}}>
+            <option value="0.5" selected={{eq this.contourInterval "0.5"}}>0,5 m</option>
+            <option value="1" selected={{eq this.contourInterval "1"}}>1 m</option>
+            <option value="2" selected={{eq this.contourInterval "2"}}>2 m</option>
+            <option value="5" selected={{eq this.contourInterval "5"}}>5 m</option>
+          </select>
+        </label>
+      </div>
+    {{/if}}
+
     {{#if this.manifestHash}}
       <p class="text-small medium-gray">Modelo versionado · manifesto SHA-256 <code>{{this.manifestHash}}</code></p>
     {{/if}}
-    <p class="text-small medium-gray">As cotas são calculadas a partir do modelo digital de terreno municipal de 2020 recortado pela geometria versionada do lote. A declividade exibida é o gradiente global do plano de melhor ajuste; não representa a maior declividade local nem substitui levantamento topográfico de campo.</p>
+    {{! template-lint-disable no-whitespace-within-word }}
+    <p class="text-small medium-gray">As cotas e a superfície são derivadas do modelo digital de terreno de 2020 recortado pela geometria versionada do lote. A declividade média global vem de um plano de melhor ajuste. P95, distribuição e maior amostra local são derivados de uma grade de 1 m e são sensíveis à microtopografia; a maior amostra não deve ser usada isoladamente como declividade de projeto. Estes resultados não substituem levantamento planialtimétrico de campo.</p>
   {{/if}}
 </section>

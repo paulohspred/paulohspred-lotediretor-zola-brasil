@@ -60,4 +60,15 @@ export default class PlatformApiService extends Service {
       { method: 'POST' }
     );
   }
+
+  async getTerrainProduct(propertyId, contourIntervalM = 1) {
+    const id = encodeURIComponent(String(propertyId));
+    const query = new URLSearchParams({
+      municipalityIbge: '3550308',
+      contourIntervalM: String(contourIntervalM),
+    });
+    return this.requestJson(
+      `/api/platform/properties/${id}/terrain/product?${query.toString()}`
+    );
+  }
 }

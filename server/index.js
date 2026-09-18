@@ -885,6 +885,27 @@ module.exports = function (app) {
     }
   );
 
+  app.get(
+    '/api/platform/properties/:lotId/terrain/product',
+    async (req, res) => {
+      try {
+        const upstream = await requestPlatformApiJson(
+          `/api/v1/properties/${encodeURIComponent(
+            req.params.lotId
+          )}/terrain/product`,
+          {
+            municipalityIbge: req.query.municipalityIbge || '3550308',
+            contourIntervalM: req.query.contourIntervalM || '1',
+          }
+        );
+        res.set('Cache-Control', 'no-store');
+        res.status(upstream.status).json(upstream.payload || {});
+      } catch (_error) {
+        res.status(502).json({ error: 'Produto topográfico indisponível' });
+      }
+    }
+  );
+
   app.get('/api/platform/evidence', async (req, res) => {
     try {
       const upstream = await requestPlatformApiJson(
