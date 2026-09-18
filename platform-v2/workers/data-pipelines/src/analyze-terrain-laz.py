@@ -12,14 +12,15 @@ from pyproj import Transformer
 from scipy.interpolate import LinearNDInterpolator
 from scipy.spatial import Delaunay
 from shapely import contains_xy
-from shapely.geometry import LineString, Polygon, mapping, shape
+from shapely.geometry import LineString, Point, Polygon, mapping, shape
 from shapely.ops import transform
 
 EXPECTED_EPSG = 31983
-ANALYSIS_VERSION = "terrain-mdt-2020-surface-v2"
+ANALYSIS_VERSION = "terrain-mdt-2020-surface-v3"
 GRID_RESOLUTION_M = 1.0
 CONTEXT_BUFFER_M = 8.0
 CONTOUR_INTERVALS_M = (0.5, 1.0, 2.0, 5.0)
+PROFILE_SPACING_M = 0.5
 SLOPE_BANDS = (
     (0.0, 5.0, "0–5%"),
     (5.0, 15.0, "5–15%"),
@@ -215,6 +216,40 @@ def triangle_plane(vertices):
     }
 
 
+
+def geographic_plane_properties(vertices, to_wgs84):
+    geographic_vertices = np.array(
+        [
+            [*to_wgs84.transform(float(vertex[0]), float(vertex[1])), float(vertex[2])]
+            for vertex in vertices
+        ],
+        dtype=np.float64,
+    )
+    lon0 = float(np.mean(geographic_vertices[:, 0]))
+    lat0 = float(np.mean(geographic_vertices[:, 1]))
+    matrix = np.column_stack(
+        [
+            geographic_vertices[:, 0] - lon0,
+            geographic_vertices[:, 1] - lat0,
+            np.ones(3, dtype=np.float64),
+        ]
+    )
+    try:
+        dzdlon, dzdlat, elevation_origin = np.linalg.solve(
+            matrix, geographic_vertices[:, 2]
+        )
+    except np.linalg.LinAlgError:
+        return {}
+    return {
+        "elevationPlaneOriginLon": round(lon0, 9),
+        "elevationPlaneOriginLat": round(lat0, 9),
+        "elevationPlaneOriginM": round(float(elevation_origin), 6),
+        "elevationDzDLon": round(float(dzdlon), 6),
+        "elevationDzDLat": round(float(dzdlat), 6),
+    }
+
+
+
 def build_tin(context_points, lot_projected, to_wgs84):
     triangulation = Delaunay(context_points[:, :2])
     features = []
@@ -247,6 +282,7 @@ def build_tin(context_points, lot_projected, to_wgs84):
                     "downslopeAspectLabel": plane["downslopeAspectLabel"],
                     "meanElevationM": round(float(np.mean(vertices[:, 2])), 3),
                     "clippedAreaM2": round(float(clipped.area), 4),
+                    **geographic_plane_properties(vertices, to_wgs84),
                 },
             }
         )
@@ -368,6 +404,153 @@ def build_grid(context_points, lot_projected, to_wgs84):
             "bands": bands,
         },
     }
+
+
+
+def choose_profile_segment(intersection, anchor):
+    parts = [part for part in line_parts(intersection) if part.length > 1e-6]
+    if not parts:
+        return None
+    touching = [part for part in parts if part.distance(anchor) <= 1e-6]
+    candidates = touching or parts
+    return max(candidates, key=lambda item: item.length)
+
+
+def profile_axis(lot_projected):
+    rectangle = lot_projected.minimum_rotated_rectangle
+    coordinates = list(rectangle.exterior.coords)
+    edges = []
+    for index in range(4):
+        start = coordinates[index]
+        end = coordinates[index + 1]
+        dx = end[0] - start[0]
+        dy = end[1] - start[1]
+        length = math.hypot(dx, dy)
+        if length > 1e-9:
+            edges.append((length, dx / length, dy / length))
+    if not edges:
+        raise SystemExit("Could not determine lot profile axis")
+    _, ux, uy = max(edges, key=lambda item: item[0])
+    return ux, uy
+
+
+def build_profile(
+    profile_id,
+    label,
+    lot_projected,
+    context_points,
+    to_wgs84,
+    ux,
+    uy,
+):
+    anchor = lot_projected.centroid
+    if not lot_projected.covers(anchor):
+        anchor = lot_projected.representative_point()
+
+    minx, miny, maxx, maxy = lot_projected.bounds
+    span = max(maxx - minx, maxy - miny, 1.0) * 4.0
+    candidate = LineString(
+        [
+            (anchor.x - ux * span, anchor.y - uy * span),
+            (anchor.x + ux * span, anchor.y + uy * span),
+        ]
+    )
+    segment = choose_profile_segment(candidate.intersection(lot_projected), anchor)
+    if segment is None or segment.length <= 1e-6:
+        raise SystemExit(f"Could not build {profile_id} terrain profile")
+
+    triangulation = Delaunay(context_points[:, :2])
+    interpolator = LinearNDInterpolator(
+        triangulation, context_points[:, 2], fill_value=np.nan
+    )
+    distances = list(np.arange(0.0, segment.length, PROFILE_SPACING_M))
+    if not distances or not math.isclose(distances[-1], segment.length, abs_tol=1e-6):
+        distances.append(float(segment.length))
+
+    samples = []
+    geographic_coordinates = []
+    for distance in distances:
+        point = segment.interpolate(float(distance))
+        elevation_value = interpolator(point.x, point.y)
+        elevation = float(np.asarray(elevation_value).reshape(-1)[0])
+        if not np.isfinite(elevation):
+            continue
+        lon, lat = to_wgs84.transform(float(point.x), float(point.y))
+        geographic_coordinates.append([float(lon), float(lat)])
+        samples.append(
+            {
+                "distanceM": round(float(distance), 3),
+                "elevationM": round(elevation, 3),
+                "longitude": round(float(lon), 9),
+                "latitude": round(float(lat), 9),
+            }
+        )
+
+    if len(samples) < 2:
+        raise SystemExit(f"Insufficient samples for {profile_id} terrain profile")
+
+    length_m = float(samples[-1]["distanceM"] - samples[0]["distanceM"])
+    elevation_start = float(samples[0]["elevationM"])
+    elevation_end = float(samples[-1]["elevationM"])
+    net_grade = (
+        (elevation_end - elevation_start) / length_m * 100.0
+        if length_m > 0
+        else 0.0
+    )
+    elevations = np.array([sample["elevationM"] for sample in samples], dtype=np.float64)
+    return {
+        "id": profile_id,
+        "label": label,
+        "spacingM": PROFILE_SPACING_M,
+        "lengthM": length_m,
+        "elevationStartM": elevation_start,
+        "elevationEndM": elevation_end,
+        "elevationMinM": float(np.min(elevations)),
+        "elevationMaxM": float(np.max(elevations)),
+        "reliefAmplitudeM": float(np.max(elevations) - np.min(elevations)),
+        "netGradePercent": float(net_grade),
+        "line": {
+            "type": "Feature",
+            "geometry": {
+                "type": "LineString",
+                "coordinates": geographic_coordinates,
+            },
+            "properties": {
+                "profileId": profile_id,
+                "label": label,
+            },
+        },
+        "samples": samples,
+    }
+
+
+def build_profiles(lot_projected, context_points, to_wgs84):
+    ux, uy = profile_axis(lot_projected)
+    longitudinal = build_profile(
+        "principal",
+        "Perfil principal",
+        lot_projected,
+        context_points,
+        to_wgs84,
+        ux,
+        uy,
+    )
+    transverse = build_profile(
+        "transversal",
+        "Perfil transversal",
+        lot_projected,
+        context_points,
+        to_wgs84,
+        -uy,
+        ux,
+    )
+    return {
+        "method": "Profiles through the lot centroid along the major axis of the minimum rotated rectangle and its perpendicular; elevation sampled every 0.5 m from the Delaunay surface",
+        "spacingM": PROFILE_SPACING_M,
+        "principal": longitudinal,
+        "transversal": transverse,
+    }
+
 
 
 def main():
@@ -539,6 +722,11 @@ def main():
         float(np.min(z)),
         float(np.max(z)),
     )
+    profiles = build_profiles(
+        lot_projected,
+        context_points,
+        to_wgs84,
+    )
 
     tin_weighted_mean = (
         float(np.average(tin_slopes, weights=tin_weights))
@@ -580,7 +768,7 @@ def main():
             "method": "1 m linear interpolation over Delaunay triangulation; finite-difference gradient sampled inside lot",
         },
         "surface": {
-            "version": "terrain-surface-v2",
+            "version": "terrain-surface-v3",
             "contextBufferM": CONTEXT_BUFFER_M,
             "grid": grid["product"],
             "tin": tin_product,
@@ -588,6 +776,7 @@ def main():
             "tinAreaWeightedMeanSlopePercent": tin_weighted_mean,
             "contours": contours,
             "contourIntervalsM": list(CONTOUR_INTERVALS_M),
+            "profiles": profiles,
         },
         "lowPoint": point_payload(low_index),
         "highPoint": point_payload(high_index),

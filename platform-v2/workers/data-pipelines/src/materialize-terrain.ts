@@ -14,7 +14,7 @@ const SUBJECT_TYPE = 'SP_LOT';
 const SOURCE_CODE = 'PMSP_TERRITORIO_TOPOGRAFIA';
 const INDEX_TYPE_NAME = 'geoportal:quadricula_folha_mdt_mds_2020';
 const DOWNLOAD_VERSION = 'terrain-mdt-2020-download-v1';
-const ANALYSIS_VERSION = 'terrain-mdt-2020-surface-v2';
+const ANALYSIS_VERSION = 'terrain-mdt-2020-surface-v3';
 const MAX_SHEETS = 8;
 const MAX_ZIP_BYTES = 50 * 1024 * 1024;
 
@@ -138,6 +138,12 @@ type TerrainAnalysis = {
     tinAreaWeightedMeanSlopePercent: number | null;
     contours: Record<string, Record<string, unknown>>;
     contourIntervalsM: number[];
+    profiles: {
+      method: string;
+      spacingM: number;
+      principal: TerrainProfile;
+      transversal: TerrainProfile;
+    };
   };
   lowPoint: TerrainPoint;
   highPoint: TerrainPoint;
@@ -149,6 +155,26 @@ type TerrainAnalysis = {
     lazFileName: string;
     epsg: number;
     verticalDatum: string | null;
+  }>;
+};
+
+type TerrainProfile = {
+  id: string;
+  label: string;
+  spacingM: number;
+  lengthM: number;
+  elevationStartM: number;
+  elevationEndM: number;
+  elevationMinM: number;
+  elevationMaxM: number;
+  reliefAmplitudeM: number;
+  netGradePercent: number;
+  line: Record<string, unknown>;
+  samples: Array<{
+    distanceM: number;
+    elevationM: number;
+    longitude: number;
+    latitude: number;
   }>;
 };
 
@@ -693,6 +719,34 @@ function factsFromAnalysis(analysis: TerrainAnalysis): EvidenceFact[] {
       calculationMethod:
         'Versioned terrain product containing a 1 m interpolated grid, clipped TIN polygons and derived contour sets at 0.5/1/2/5 m intervals',
     },
+    {
+      evidenceType: 'SP_LOT_TERRAIN_PROFILE_PRINCIPAL_LENGTH',
+      locator: 'analysis:surface:profile:principal:length',
+      valueText: metric(analysis.surface.profiles.principal.lengthM, 2),
+      unit: 'm',
+      calculationMethod: analysis.surface.profiles.method,
+    },
+    {
+      evidenceType: 'SP_LOT_TERRAIN_PROFILE_PRINCIPAL_GRADE',
+      locator: 'analysis:surface:profile:principal:net-grade',
+      valueText: metric(analysis.surface.profiles.principal.netGradePercent, 2),
+      unit: '%',
+      calculationMethod: analysis.surface.profiles.method,
+    },
+    {
+      evidenceType: 'SP_LOT_TERRAIN_PROFILE_TRANSVERSAL_LENGTH',
+      locator: 'analysis:surface:profile:transversal:length',
+      valueText: metric(analysis.surface.profiles.transversal.lengthM, 2),
+      unit: 'm',
+      calculationMethod: analysis.surface.profiles.method,
+    },
+    {
+      evidenceType: 'SP_LOT_TERRAIN_PROFILE_TRANSVERSAL_GRADE',
+      locator: 'analysis:surface:profile:transversal:net-grade',
+      valueText: metric(analysis.surface.profiles.transversal.netGradePercent, 2),
+      unit: '%',
+      calculationMethod: analysis.surface.profiles.method,
+    },
   ];
 }
 
@@ -772,6 +826,9 @@ async function persistEvidence(
             surfaceVersion: analysis.surface.version,
             tinTriangleCount: analysis.surface.tinTriangleCount,
             contourIntervalsM: analysis.surface.contourIntervalsM,
+            profileSpacingM: analysis.surface.profiles.spacingM,
+            profilePrincipalLengthM: analysis.surface.profiles.principal.lengthM,
+            profileTransversalLengthM: analysis.surface.profiles.transversal.lengthM,
           }),
         ],
       );

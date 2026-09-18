@@ -5,7 +5,7 @@ import {
   PropertyMaterializationState,
 } from './materialization.types';
 
-const TERRAIN_ANALYSIS_VERSION = 'terrain-mdt-2020-surface-v2';
+const TERRAIN_ANALYSIS_VERSION = 'terrain-mdt-2020-surface-v3';
 
 type JobRow = {
   id: string;
