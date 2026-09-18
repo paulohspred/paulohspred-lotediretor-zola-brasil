@@ -14,7 +14,7 @@ const SUBJECT_TYPE = 'SP_LOT';
 const SOURCE_CODE = 'PMSP_TERRITORIO_TOPOGRAFIA';
 const INDEX_TYPE_NAME = 'geoportal:quadricula_folha_mdt_mds_2020';
 const DOWNLOAD_VERSION = 'terrain-mdt-2020-download-v1';
-const ANALYSIS_VERSION = 'terrain-mdt-2020-surface-v3';
+const ANALYSIS_VERSION = 'terrain-mdt-2020-surface-v4';
 const MAX_SHEETS = 8;
 const MAX_ZIP_BYTES = 50 * 1024 * 1024;
 
@@ -143,6 +143,31 @@ type TerrainAnalysis = {
       spacingM: number;
       principal: TerrainProfile;
       transversal: TerrainProfile;
+    };
+    hydrology: {
+      method: string;
+      gridResolutionM: number;
+      contextBufferM: number;
+      preferredRunoffDirectionDegrees: number | null;
+      preferredRunoffDirectionLabel: string | null;
+      basinCount: number;
+      outletCount: number;
+      mainInternalBasinApproxAreaM2: number;
+      mainOutlet: {
+        longitude: number;
+        latitude: number;
+        elevationM: number;
+        basinId: number;
+      };
+      depressionScreening: {
+        maxFillDepthM: number;
+        estimatedFillVolumeM3: number;
+        affectedSampleCountAbove1Cm: number;
+      };
+      basins: Record<string, unknown>;
+      divides: Record<string, unknown>;
+      flowPaths: Record<string, unknown>;
+      outlets: Record<string, unknown>;
     };
   };
   lowPoint: TerrainPoint;
@@ -747,6 +772,57 @@ function factsFromAnalysis(analysis: TerrainAnalysis): EvidenceFact[] {
       unit: '%',
       calculationMethod: analysis.surface.profiles.method,
     },
+    {
+      evidenceType: 'SP_LOT_TERRAIN_RUNOFF_DIRECTION',
+      locator: 'analysis:surface:hydrology:preferred-direction',
+      valueText:
+        analysis.surface.hydrology.preferredRunoffDirectionDegrees == null
+          ? 'NÃO DISPONÍVEL'
+          : `${metric(analysis.surface.hydrology.preferredRunoffDirectionDegrees, 1)}° ${analysis.surface.hydrology.preferredRunoffDirectionLabel ?? ''}`.trim(),
+      calculationMethod: analysis.surface.hydrology.method,
+    },
+    {
+      evidenceType: 'SP_LOT_TERRAIN_DRAINAGE_BASIN_COUNT',
+      locator: 'analysis:surface:hydrology:basin-count',
+      valueText: String(analysis.surface.hydrology.basinCount),
+      unit: 'sub-bacias internas',
+      calculationMethod: analysis.surface.hydrology.method,
+    },
+    {
+      evidenceType: 'SP_LOT_TERRAIN_MAIN_INTERNAL_BASIN_AREA',
+      locator: 'analysis:surface:hydrology:main-basin-area',
+      valueText: metric(analysis.surface.hydrology.mainInternalBasinApproxAreaM2, 2),
+      unit: 'm²',
+      calculationMethod: analysis.surface.hydrology.method,
+    },
+    {
+      evidenceType: 'SP_LOT_TERRAIN_MAIN_OUTLET_ELEVATION',
+      locator: 'analysis:surface:hydrology:main-outlet-elevation',
+      valueText: metric(analysis.surface.hydrology.mainOutlet.elevationM, 3),
+      unit: 'm',
+      geometry: {
+        type: 'Point',
+        coordinates: [
+          analysis.surface.hydrology.mainOutlet.longitude,
+          analysis.surface.hydrology.mainOutlet.latitude,
+        ],
+      },
+      calculationMethod: analysis.surface.hydrology.method,
+    },
+    {
+      evidenceType: 'SP_LOT_TERRAIN_DEPRESSION_MAX_FILL_DEPTH',
+      locator: 'analysis:surface:hydrology:depression-max-fill-depth',
+      valueText: metric(analysis.surface.hydrology.depressionScreening.maxFillDepthM, 3),
+      unit: 'm',
+      calculationMethod: analysis.surface.hydrology.method,
+    },
+    {
+      evidenceType: 'SP_LOT_TERRAIN_DEPRESSION_FILL_VOLUME',
+      locator: 'analysis:surface:hydrology:depression-fill-volume',
+      valueText: metric(analysis.surface.hydrology.depressionScreening.estimatedFillVolumeM3, 3),
+      unit: 'm³',
+      calculationMethod: analysis.surface.hydrology.method,
+    },
   ];
 }
 
@@ -829,6 +905,12 @@ async function persistEvidence(
             profileSpacingM: analysis.surface.profiles.spacingM,
             profilePrincipalLengthM: analysis.surface.profiles.principal.lengthM,
             profileTransversalLengthM: analysis.surface.profiles.transversal.lengthM,
+            hydrologyBasinCount: analysis.surface.hydrology.basinCount,
+            hydrologyOutletCount: analysis.surface.hydrology.outletCount,
+            hydrologyPreferredDirectionDegrees:
+              analysis.surface.hydrology.preferredRunoffDirectionDegrees,
+            hydrologyDepressionMaxFillDepthM:
+              analysis.surface.hydrology.depressionScreening.maxFillDepthM,
           }),
         ],
       );

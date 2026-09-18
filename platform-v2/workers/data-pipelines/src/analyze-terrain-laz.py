@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+from heapq import heappop, heappush
 import json
 import math
 import tempfile
@@ -12,15 +13,16 @@ from pyproj import Transformer
 from scipy.interpolate import LinearNDInterpolator
 from scipy.spatial import Delaunay
 from shapely import contains_xy
-from shapely.geometry import LineString, Point, Polygon, mapping, shape
-from shapely.ops import transform
+from shapely.geometry import LineString, Point, Polygon, box, mapping, shape
+from shapely.ops import transform, unary_union
 
 EXPECTED_EPSG = 31983
-ANALYSIS_VERSION = "terrain-mdt-2020-surface-v3"
+ANALYSIS_VERSION = "terrain-mdt-2020-surface-v4"
 GRID_RESOLUTION_M = 1.0
 CONTEXT_BUFFER_M = 8.0
 CONTOUR_INTERVALS_M = (0.5, 1.0, 2.0, 5.0)
 PROFILE_SPACING_M = 0.5
+HYDROLOGY_EPSILON_M = 0.0001
 SLOPE_BANDS = (
     (0.0, 5.0, "0–5%"),
     (5.0, 15.0, "5–15%"),
@@ -553,6 +555,410 @@ def build_profiles(lot_projected, context_points, to_wgs84):
 
 
 
+
+def hydrology_neighbors(row, col, height, width):
+    for dr in (-1, 0, 1):
+        for dc in (-1, 0, 1):
+            if dr == 0 and dc == 0:
+                continue
+            rr = row + dr
+            cc = col + dc
+            if 0 <= rr < height and 0 <= cc < width:
+                yield rr, cc, math.sqrt(2.0) if dr and dc else 1.0
+
+
+def priority_flood(elevation, valid):
+    height, width = elevation.shape
+    filled = np.array(elevation, copy=True)
+    visited = np.zeros_like(valid, dtype=bool)
+    heap = []
+
+    for row in range(height):
+        for col in range(width):
+            if not valid[row, col]:
+                continue
+            boundary = (
+                row == 0
+                or col == 0
+                or row == height - 1
+                or col == width - 1
+                or any(
+                    not valid[rr, cc]
+                    for rr, cc, _distance in hydrology_neighbors(
+                        row, col, height, width
+                    )
+                )
+            )
+            if boundary:
+                visited[row, col] = True
+                heappush(heap, (float(filled[row, col]), row, col))
+
+    while heap:
+        current_elevation, row, col = heappop(heap)
+        for rr, cc, _distance in hydrology_neighbors(row, col, height, width):
+            if not valid[rr, cc] or visited[rr, cc]:
+                continue
+            visited[rr, cc] = True
+            next_elevation = max(
+                float(elevation[rr, cc]),
+                current_elevation + HYDROLOGY_EPSILON_M,
+            )
+            filled[rr, cc] = next_elevation
+            heappush(heap, (next_elevation, rr, cc))
+
+    return filled
+
+
+def build_flow_direction(filled, valid):
+    height, width = filled.shape
+    downstream = np.full((height, width, 2), -1, dtype=np.int32)
+    for row in range(height):
+        for col in range(width):
+            if not valid[row, col]:
+                continue
+            current = float(filled[row, col])
+            best = None
+            best_gradient = 0.0
+            for rr, cc, distance in hydrology_neighbors(row, col, height, width):
+                if not valid[rr, cc]:
+                    continue
+                drop = current - float(filled[rr, cc])
+                gradient = drop / distance
+                if gradient > best_gradient + 1e-12:
+                    best_gradient = gradient
+                    best = (rr, cc)
+            if best is not None:
+                downstream[row, col] = best
+    return downstream
+
+
+def flow_accumulation(filled, valid, downstream):
+    accumulation = np.zeros_like(filled, dtype=np.float64)
+    accumulation[valid] = 1.0
+    cells = np.argwhere(valid)
+    order = sorted(
+        ((float(filled[row, col]), int(row), int(col)) for row, col in cells),
+        reverse=True,
+    )
+    for _elevation, row, col in order:
+        rr, cc = downstream[row, col]
+        if rr >= 0 and cc >= 0:
+            accumulation[rr, cc] += accumulation[row, col]
+    return accumulation
+
+
+def trace_lot_outlet(row, col, inside_lot, downstream):
+    seen = set()
+    current = (int(row), int(col))
+    last_inside = current
+    while current not in seen:
+        seen.add(current)
+        rr, cc = downstream[current]
+        if rr < 0 or cc < 0:
+            return last_inside
+        next_cell = (int(rr), int(cc))
+        if not inside_lot[next_cell]:
+            return last_inside
+        last_inside = next_cell
+        current = next_cell
+    return last_inside
+
+
+def cluster_outlets(outlets):
+    remaining = set(outlets)
+    clusters = []
+    while remaining:
+        seed = remaining.pop()
+        stack = [seed]
+        cluster = {seed}
+        while stack:
+            row, col = stack.pop()
+            adjacent = [
+                (row + dr, col + dc)
+                for dr in (-1, 0, 1)
+                for dc in (-1, 0, 1)
+                if not (dr == 0 and dc == 0)
+            ]
+            for cell in adjacent:
+                if cell in remaining:
+                    remaining.remove(cell)
+                    cluster.add(cell)
+                    stack.append(cell)
+        clusters.append(cluster)
+    return clusters
+
+
+def basin_cell_polygon(row, col, grid_x, grid_y, resolution):
+    x = float(grid_x[col])
+    y = float(grid_y[row])
+    half = resolution / 2.0
+    return box(x - half, y - half, x + half, y + half)
+
+
+def build_hydrology(context_points, lot_projected, context_polygon, to_wgs84):
+    minx, miny, maxx, maxy = context_polygon.bounds
+    resolution = GRID_RESOLUTION_M
+    grid_x = np.arange(
+        math.floor(minx / resolution) * resolution,
+        math.ceil(maxx / resolution) * resolution + resolution * 0.5,
+        resolution,
+    )
+    grid_y = np.arange(
+        math.floor(miny / resolution) * resolution,
+        math.ceil(maxy / resolution) * resolution + resolution * 0.5,
+        resolution,
+    )
+    mesh_x, mesh_y = np.meshgrid(grid_x, grid_y)
+
+    triangulation = Delaunay(context_points[:, :2])
+    interpolator = LinearNDInterpolator(
+        triangulation, context_points[:, 2], fill_value=np.nan
+    )
+    elevation = np.asarray(interpolator(mesh_x, mesh_y), dtype=np.float64)
+    inside_context = contains_xy(context_polygon, mesh_x, mesh_y)
+    valid = inside_context & np.isfinite(elevation)
+    inside_lot = contains_xy(lot_projected, mesh_x, mesh_y) & valid
+    if np.count_nonzero(inside_lot) < 3:
+        raise SystemExit("Insufficient hydrology grid samples inside lot")
+
+    filled = priority_flood(elevation, valid)
+    downstream = build_flow_direction(filled, valid)
+    accumulation = flow_accumulation(filled, valid, downstream)
+
+    lot_cells = [tuple(map(int, cell)) for cell in np.argwhere(inside_lot)]
+    raw_outlet_by_cell = {
+        cell: trace_lot_outlet(cell[0], cell[1], inside_lot, downstream)
+        for cell in lot_cells
+    }
+    outlet_cells = sorted(set(raw_outlet_by_cell.values()))
+    outlet_clusters = cluster_outlets(outlet_cells)
+    outlet_cluster_by_cell = {}
+    for basin_id, cluster in enumerate(outlet_clusters, start=1):
+        for cell in cluster:
+            outlet_cluster_by_cell[cell] = basin_id
+
+    basin_cells = {}
+    for cell, outlet in raw_outlet_by_cell.items():
+        basin_id = outlet_cluster_by_cell[outlet]
+        basin_cells.setdefault(basin_id, []).append(cell)
+
+    basin_features = []
+    basin_geometries = {}
+    outlet_features = []
+    representative_outlets = {}
+    ranked_basins = sorted(
+        basin_cells.items(), key=lambda item: len(item[1]), reverse=True
+    )
+    rank_by_basin = {
+        basin_id: rank
+        for rank, (basin_id, _cells) in enumerate(ranked_basins, start=1)
+    }
+
+    for basin_id, cells in ranked_basins:
+        polygons = [
+            basin_cell_polygon(row, col, grid_x, grid_y, resolution)
+            for row, col in cells
+        ]
+        basin_geometry = unary_union(polygons).intersection(lot_projected)
+        basin_geometries[basin_id] = basin_geometry
+        geographic_basin = transform(to_wgs84.transform, basin_geometry)
+        basin_features.append(
+            {
+                "type": "Feature",
+                "geometry": mapping(geographic_basin),
+                "properties": {
+                    "basinId": basin_id,
+                    "rank": rank_by_basin[basin_id],
+                    "approxAreaM2": round(float(basin_geometry.area), 3),
+                    "sampleCount": len(cells),
+                },
+            }
+        )
+
+        cluster_cells = [
+            cell
+            for cell, cluster_id in outlet_cluster_by_cell.items()
+            if cluster_id == basin_id
+        ]
+        representative = max(
+            cluster_cells,
+            key=lambda cell: float(accumulation[cell]),
+        )
+        representative_outlets[basin_id] = representative
+        row, col = representative
+        lon, lat = to_wgs84.transform(float(grid_x[col]), float(grid_y[row]))
+        outlet_features.append(
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [float(lon), float(lat)],
+                },
+                "properties": {
+                    "basinId": basin_id,
+                    "rank": rank_by_basin[basin_id],
+                    "elevationM": round(float(elevation[row, col]), 3),
+                    "accumulationSamples": round(float(accumulation[row, col]), 3),
+                },
+            }
+        )
+
+    divide_features = []
+    basin_ids = list(basin_geometries)
+    for index, left_id in enumerate(basin_ids):
+        left = basin_geometries[left_id]
+        for right_id in basin_ids[index + 1 :]:
+            shared = left.boundary.intersection(basin_geometries[right_id].boundary)
+            for part in line_parts(shared):
+                if part.length < 0.25:
+                    continue
+                geographic = transform(to_wgs84.transform, part)
+                divide_features.append(
+                    {
+                        "type": "Feature",
+                        "geometry": mapping(geographic),
+                        "properties": {
+                            "leftBasinId": left_id,
+                            "rightBasinId": right_id,
+                        },
+                    }
+                )
+
+    upstream = {}
+    for row, col in lot_cells:
+        rr, cc = downstream[row, col]
+        if rr >= 0 and cc >= 0 and inside_lot[rr, cc]:
+            upstream.setdefault((int(rr), int(cc)), []).append((row, col))
+
+    flow_features = []
+    for basin_id, _cells in ranked_basins:
+        outlet = representative_outlets[basin_id]
+        path = [outlet]
+        current = outlet
+        seen = {current}
+        while True:
+            candidates = [
+                cell
+                for cell in upstream.get(current, [])
+                if outlet_cluster_by_cell[
+                    raw_outlet_by_cell[cell]
+                ] == basin_id
+                and cell not in seen
+            ]
+            if not candidates:
+                break
+            next_cell = max(
+                candidates,
+                key=lambda cell: float(accumulation[cell]),
+            )
+            path.append(next_cell)
+            seen.add(next_cell)
+            current = next_cell
+
+        path.reverse()
+        if len(path) < 2:
+            continue
+        projected_line = LineString(
+            [(float(grid_x[col]), float(grid_y[row])) for row, col in path]
+        )
+        if projected_line.length < 0.5:
+            continue
+        geographic = transform(to_wgs84.transform, projected_line)
+        flow_features.append(
+            {
+                "type": "Feature",
+                "geometry": mapping(geographic),
+                "properties": {
+                    "basinId": basin_id,
+                    "rank": rank_by_basin[basin_id],
+                    "lengthM": round(float(projected_line.length), 3),
+                },
+            }
+        )
+
+    vectors = []
+    weights = []
+    for row, col in lot_cells:
+        rr, cc = downstream[row, col]
+        if rr < 0 or cc < 0:
+            continue
+        dx = float(grid_x[cc] - grid_x[col])
+        dy = float(grid_y[rr] - grid_y[row])
+        length = math.hypot(dx, dy)
+        if length <= 0:
+            continue
+        vectors.append((dx / length, dy / length))
+        weights.append(math.sqrt(max(float(accumulation[row, col]), 1.0)))
+
+    if vectors:
+        vector_array = np.asarray(vectors, dtype=np.float64)
+        weight_array = np.asarray(weights, dtype=np.float64)
+        mean_dx = float(np.average(vector_array[:, 0], weights=weight_array))
+        mean_dy = float(np.average(vector_array[:, 1], weights=weight_array))
+        direction_degrees = math.degrees(math.atan2(mean_dx, mean_dy)) % 360.0
+        direction_label = compass_label(direction_degrees)
+    else:
+        direction_degrees = None
+        direction_label = None
+
+    depression_depth = np.where(
+        inside_lot,
+        np.maximum(filled - elevation, 0.0),
+        0.0,
+    )
+    depression_cells = depression_depth[inside_lot]
+    max_fill_depth = float(np.max(depression_cells)) if depression_cells.size else 0.0
+    fill_volume = float(np.sum(depression_cells) * resolution * resolution)
+    affected_count = int(np.count_nonzero(depression_cells > 0.01))
+
+    main_basin_id = ranked_basins[0][0]
+    main_basin_geometry = basin_geometries[main_basin_id]
+    main_outlet = representative_outlets[main_basin_id]
+    main_row, main_col = main_outlet
+    main_lon, main_lat = to_wgs84.transform(
+        float(grid_x[main_col]), float(grid_y[main_row])
+    )
+
+    return {
+        "method": "Preliminary terrain-only runoff screening on a 1 m interpolated grid with an 8 m terrain context buffer; Priority-Flood depression routing followed by D8 flow direction and internal lot basin grouping. Does not model rainfall, infiltration, pipes, curbs, walls or future grading.",
+        "gridResolutionM": resolution,
+        "contextBufferM": CONTEXT_BUFFER_M,
+        "preferredRunoffDirectionDegrees": direction_degrees,
+        "preferredRunoffDirectionLabel": direction_label,
+        "basinCount": len(ranked_basins),
+        "outletCount": len(outlet_clusters),
+        "mainInternalBasinApproxAreaM2": float(main_basin_geometry.area),
+        "mainOutlet": {
+            "longitude": float(main_lon),
+            "latitude": float(main_lat),
+            "elevationM": float(elevation[main_row, main_col]),
+            "basinId": main_basin_id,
+        },
+        "depressionScreening": {
+            "maxFillDepthM": max_fill_depth,
+            "estimatedFillVolumeM3": fill_volume,
+            "affectedSampleCountAbove1Cm": affected_count,
+        },
+        "basins": {
+            "type": "FeatureCollection",
+            "features": basin_features,
+        },
+        "divides": {
+            "type": "FeatureCollection",
+            "features": divide_features,
+        },
+        "flowPaths": {
+            "type": "FeatureCollection",
+            "features": flow_features,
+        },
+        "outlets": {
+            "type": "FeatureCollection",
+            "features": outlet_features,
+        },
+    }
+
+
+
 def main():
     args = parse_args()
     if not args.zip_specs:
@@ -727,6 +1133,12 @@ def main():
         context_points,
         to_wgs84,
     )
+    hydrology = build_hydrology(
+        context_points,
+        lot_projected,
+        context_polygon,
+        to_wgs84,
+    )
 
     tin_weighted_mean = (
         float(np.average(tin_slopes, weights=tin_weights))
@@ -768,7 +1180,7 @@ def main():
             "method": "1 m linear interpolation over Delaunay triangulation; finite-difference gradient sampled inside lot",
         },
         "surface": {
-            "version": "terrain-surface-v3",
+            "version": "terrain-surface-v4",
             "contextBufferM": CONTEXT_BUFFER_M,
             "grid": grid["product"],
             "tin": tin_product,
@@ -777,6 +1189,7 @@ def main():
             "contours": contours,
             "contourIntervalsM": list(CONTOUR_INTERVALS_M),
             "profiles": profiles,
+            "hydrology": hydrology,
         },
         "lowPoint": point_payload(low_index),
         "highPoint": point_payload(high_index),

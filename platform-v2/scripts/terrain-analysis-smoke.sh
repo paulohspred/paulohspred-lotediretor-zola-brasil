@@ -72,10 +72,10 @@ with tempfile.TemporaryDirectory(prefix='terrain-smoke-') as temp:
     assert abs(result['elevationMaxM'] - 100.7) < 0.01, result
     assert abs(result['reliefAmplitudeM'] - 0.7) < 0.02, result
     assert abs(result['bestFitPlane']['slopePercent'] - expected_slope) < 0.05, result
-    assert result['analysisVersion'] == 'terrain-mdt-2020-surface-v3', result
+    assert result['analysisVersion'] == 'terrain-mdt-2020-surface-v4', result
     assert abs(result['localSlope']['medianPercent'] - expected_slope) < 0.2, result
     assert abs(result['localSlope']['p95Percent'] - expected_slope) < 0.2, result
-    assert result['surface']['version'] == 'terrain-surface-v3', result
+    assert result['surface']['version'] == 'terrain-surface-v4', result
     assert result['surface']['grid']['resolutionM'] == 1.0, result
     assert result['surface']['tinTriangleCount'] > 0, result
     assert set(result['surface']['contours']) == {'0.5','1.0','2.0','5.0'}, result
@@ -88,6 +88,14 @@ with tempfile.TemporaryDirectory(prefix='terrain-smoke-') as temp:
     tin_props=result['surface']['tin']['features'][0]['properties']
     for key in ['elevationPlaneOriginLon','elevationPlaneOriginLat','elevationPlaneOriginM','elevationDzDLon','elevationDzDLat']:
         assert key in tin_props, tin_props
+    hydrology=result['surface']['hydrology']
+    assert hydrology['basinCount'] >= 1, hydrology
+    assert hydrology['outletCount'] >= 1, hydrology
+    assert hydrology['mainInternalBasinApproxAreaM2'] > 0, hydrology
+    assert hydrology['flowPaths']['type'] == 'FeatureCollection', hydrology
+    assert hydrology['basins']['type'] == 'FeatureCollection', hydrology
+    assert hydrology['outlets']['type'] == 'FeatureCollection', hydrology
+    assert hydrology['depressionScreening']['maxFillDepthM'] >= 0, hydrology
     assert result['inputs'][0]['sheetCode'] == 'TEST', result
-    print(json.dumps({'terrain-analysis-smoke': 'OK', 'globalSlopePercent': result['bestFitPlane']['slopePercent'], 'localP95Percent': result['localSlope']['p95Percent'], 'tinTriangles': result['surface']['tinTriangleCount'], 'principalProfileM': profiles['principal']['lengthM'], 'transversalProfileM': profiles['transversal']['lengthM']}))
+    print(json.dumps({'terrain-analysis-smoke': 'OK', 'globalSlopePercent': result['bestFitPlane']['slopePercent'], 'localP95Percent': result['localSlope']['p95Percent'], 'tinTriangles': result['surface']['tinTriangleCount'], 'principalProfileM': profiles['principal']['lengthM'], 'transversalProfileM': profiles['transversal']['lengthM'], 'hydrologyBasins': hydrology['basinCount']}))
 PY
