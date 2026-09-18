@@ -288,13 +288,13 @@ export const SP_LAYER_GROUPS = [
   },
   {
     id: 'imagens',
-    label: 'Imagens aéreas históricas — GeoSampa',
+    label: 'Imagens aéreas históricas — LoteDiretor',
     timeline: true,
-    note: 'Raster oficial servido pelo WMS de mapas-base do GeoSampa.',
+    note: 'Imagens históricas integradas ao LoteDiretor.',
     layers: [
       {
         id: 'aerea_1930',
-        label: '1930 — Sara Brasil',
+        label: '1930 — Imagem aérea histórica',
         kind: 'raster-wms',
         minZoom: 10,
         color: '#263238',
@@ -302,7 +302,7 @@ export const SP_LAYER_GROUPS = [
       },
       {
         id: 'aerea_1954',
-        label: '1954 — Vasp Cruzeiro',
+        label: '1954 — Imagem aérea histórica',
         kind: 'raster-wms',
         minZoom: 10,
         color: '#37474f',
@@ -310,7 +310,7 @@ export const SP_LAYER_GROUPS = [
       },
       {
         id: 'aerea_2004',
-        label: '2004 — Ortofoto MDC',
+        label: '2004 — Ortofoto histórica',
         kind: 'raster-wms',
         minZoom: 10,
         color: '#546e7a',
@@ -318,7 +318,7 @@ export const SP_LAYER_GROUPS = [
       },
       {
         id: 'aerea_2017',
-        label: '2017 — Ortofoto PMSP RGB',
+        label: '2017 — Ortofoto',
         kind: 'raster-wms',
         minZoom: 10,
         color: '#78909c',
@@ -326,7 +326,7 @@ export const SP_LAYER_GROUPS = [
       },
       {
         id: 'aerea_2020',
-        label: '2020 — Ortofoto RGB',
+        label: '2020 — Ortofoto',
         kind: 'raster-wms',
         minZoom: 10,
         color: '#90a4ae',
@@ -334,7 +334,7 @@ export const SP_LAYER_GROUPS = [
       },
       {
         id: 'aerea_atual',
-        label: 'Mosaico ortofotográfico 10/20 cm — atual',
+        label: 'Atual — Ortofoto de alta resolução',
         kind: 'raster-wms',
         minZoom: 10,
         color: '#b0bec5',

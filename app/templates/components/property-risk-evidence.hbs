@@ -5,7 +5,7 @@
 >
   <h3 class="header-medium">Risco hidrológico versionado</h3>
   {{#if this.loading}}
-    <p class="text-small">Consultando sobreposição com a camada oficial…</p>
+    <p class="text-small">Consultando análise territorial do LoteDiretor…</p>
   {{else if this.errorMessage}}
     <p class="callout warning text-small" data-test-property-risk-error>
       A evidência de risco hidrológico está temporariamente indisponível. O
@@ -15,7 +15,7 @@
     <div class="callout secondary text-small" data-test-property-risk>
       {{#each this.evidenceRows as |evidence|}}
         <div data-test-property-risk-row>
-          <strong>Grau publicado pela fonte: {{evidence.valueText}}</strong>
+          <strong>Classificação registrada: {{evidence.valueText}}</strong>
           {{#if evidence.citation.quotedText}}
             <div>{{evidence.citation.quotedText}}</div>
           {{/if}}
@@ -33,29 +33,18 @@
               {{evidence.spatialOverlapPresentation.subjectGeometryAreaLabel}}
             </div>
           {{/if}}
-          <div>Fonte: {{evidence.snapshot.authority}}</div>
+          <div>Registro LoteDiretor versionado</div>
           <div>Snapshot SHA-256: <code>{{evidence.snapshot.sha256}}</code></div>
           {{#if evidence.calculationMethod}}
             <div>Método: <code>{{evidence.calculationMethod}}</code></div>
-          {{/if}}
-          {{#if evidence.citation.sourceUrl}}
-            <div>
-              <a
-                href={{evidence.citation.sourceUrl}}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Abrir consulta oficial capturada
-              </a>
-            </div>
           {{/if}}
         </div>
       {{/each}}
     </div>
     {{! template-lint-disable no-whitespace-within-word }}
     <p class="text-small">
-      Esta evidência reproduz o grau e o processo publicados pela fonte e
-      confirma apenas a sobreposição geométrica calculada com a camada oficial.
+      Esta evidência registra a classificação disponível e confirma apenas a
+      sobreposição geométrica calculada pelo LoteDiretor.
       Não substitui laudo técnico, vistoria atualizada ou avaliação de
       engenharia e defesa civil.
     </p>

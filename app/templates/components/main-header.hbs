@@ -1,28 +1,42 @@
-<Deprecated::SiteHeader
-  @responsiveNav={{true}}
-  @betaNotice={{false}}
-  class={{if this.printSvc.enabled "hide-for-print"}} as |banner|
+<header
+  class="site-header {{if this.printSvc.enabled "hide-for-print"}}"
 >
-  <banner.title>
-    <LinkTo @route="index" @query={{hash print=false}} class="site-title" data-test-link-to="index">
-      LoteDiretor
-      <small class="site-subtitle show-for-medium">Brasil · Inteligência Territorial e Urbanística</small>
-    </LinkTo>
-  </banner.title>
-  <banner.nav>
-    <ul class="menu vertical large-horizontal">
-      <li><LinkTo @route="imovel-360">Imóvel 360</LinkTo></li>
-      <li><LinkTo @route="plano-diretor">Plano Diretor</LinkTo></li>
-      <li><LinkTo @route="rural">Rural</LinkTo></li>
-      <li><LinkTo @route="condominio">Condomínio</LinkTo></li>
-      <li><LinkTo @route="solar">Solar</LinkTo></li>
-      <li><LinkTo @route="ai-tec">A.I TEC</LinkTo></li>
-      <li><LinkTo @route="prefeitura">Prefeitura</LinkTo></li>
-      <li class="saved-bookmarks-counter">
-        <LinkTo @route="mais">Mais
-          {{#if this.totalBookmarks}}<span class="badge sup">{{this.totalBookmarks}}</span>{{/if}}
+  <div class="grid-x grid-padding-x align-middle">
+    <div class="branding cell auto">
+      <span class="site-brand-row">
+        <LinkTo
+          @route="index"
+          @query={{hash print=false}}
+          class="site-title"
+          data-test-link-to="index"
+        >
+          LoteDiretor
         </LinkTo>
-      </li>
-    </ul>
-  </banner.nav>
-</Deprecated::SiteHeader>
+        <span
+          class="site-module-nav show-for-medium"
+          aria-label="Módulos LoteDiretor"
+        >
+          <LinkTo @route="plano-diretor">Plano Diretor</LinkTo>
+          <LinkTo @route="rural">Rural</LinkTo>
+          <LinkTo @route="condominio">Condomínio</LinkTo>
+          <LinkTo @route="solar">Solar</LinkTo>
+          <LinkTo @route="ai-tec">A.I TEC</LinkTo>
+          <LinkTo @route="prefeitura">Prefeitura</LinkTo>
+        </span>
+      </span>
+    </div>
+
+    <nav class="cell shrink hide-for-print" aria-label="Navegação principal">
+      <ul class="menu vertical large-horizontal">
+        <li><LinkTo @route="about">Sobre</LinkTo></li>
+        <li><LinkTo @route="features" class="features-header-link">Recursos</LinkTo></li>
+        <li><LinkTo @route="data">Dados</LinkTo></li>
+        <li class="saved-bookmarks-counter">
+          <LinkTo @route="bookmarks"><FaIcon @icon="bookmark" /> Salvos
+            {{#if this.totalBookmarks}}<span class="badge sup">{{this.totalBookmarks}}</span>{{/if}}
+          </LinkTo>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>

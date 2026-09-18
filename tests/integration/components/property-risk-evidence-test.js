@@ -62,7 +62,7 @@ module('Integration | Component | property-risk-evidence', function (hooks) {
     assert.dom('[data-test-property-risk-row]').exists({ count: 1 });
     assert
       .dom('[data-test-property-risk]')
-      .includesText('Grau publicado pela fonte: R1');
+      .includesText('Classificação registrada: R1');
     assert.dom('[data-test-property-risk]').includesText('R1 — ALAGAMENTO');
     assert.dom('[data-test-property-risk]').includesText('100%');
     assert.dom('[data-test-property-risk]').includesText('40,288 m²');

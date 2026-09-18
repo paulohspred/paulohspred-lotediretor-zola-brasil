@@ -13,7 +13,7 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 | 0 | Fundação | **PARCIAL / RUNTIME + PLATFORM API PROVADOS** | Auth/realm Keycloak, tenant context, app shells e promoção para staging |
 | 1 | Core territorial | **PARCIAL / SP FORTE + SNAPSHOT INGEST + EVIDENCE POR SUJEITO** | ampliar evidências territoriais por imóvel, IBGE nacional, Parcel Resolver genérico, MVT temático e relatório v1 por API |
 | 2 | UX cliente | **PARCIAL / ZOLA MODULAR SHELL + PROVENIÊNCIA** | expandir integração dos módulos com o novo core preservando mapa, busca, camadas e fluxos existentes |
-| 3 | Imóvel 360 | **PARCIAL / SHELL + IMÓVEL ATIVO** | migrar progressivamente evidências específicas do imóvel para contratos da Platform API |
+| 3 | Plano Diretor / Terreno | **PARCIAL / SHELL + IMÓVEL ATIVO** | consolidar cadastro, regras, riscos e análises de engenharia do terreno em um único módulo |
 | 4 | RE Rural | **NÃO INICIADA** | CAR/SIGEF/SNCR/CIB/IBAMA/INPE + overlaps/monitoring |
 | 5 | AI Core | **NÃO INICIADA** | AI Gateway, ingestão, OpenSearch híbrido, A.I Cidades, tools e evals |
 | 6 | Condomínio | **NÃO INICIADA** | upload privado, regras/atas, A.I Condomínio, dashboard/relatório |
@@ -46,7 +46,7 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 - Evidence ganhou vínculo explícito opcional `subjectType`/`subjectId`; o pipeline por imóvel captura `PMSP_GEOSAMPA_LOTES`, deduplica o `timeStamp` volátil por fingerprint canônico e publica fatos cadastrais confirmados e a geometria oficial versionada do lote. O pipeline de zoneamento captura candidatos da camada `perimetro_zona_lei_18177_24` pelo bbox dessa geometria e publica apenas sobreposições 2D positivas como `SP_LOT_ZONING_INTERSECTION` com status `CALCULADO`, citação e proveniência explícita para a geometria do lote.
 - O pipeline territorial por imóvel calcula em PostGIS as interseções de zoneamento, macrozona e macroárea a partir da geometria versionada do lote, com citação, proveniência e métricas de cobertura.
 - Plano Diretor consome, via proxy same-origin read-only, a evidência factual versionada da LPUOS e as sobreposições calculadas de zoneamento, macrozona e macroárea para o imóvel ativo; exibe fonte/hash/citação, método e cobertura sem converter a sobreposição geométrica, isoladamente, em conclusão jurídica ou parâmetro construtivo.
-- Imóvel 360 consome a identidade cadastral confirmada do lote e a sobreposição hidrológica calculada, com snapshot, citação, método e cobertura, sem interpretar o grau publicado pela fonte nem substituir laudo ou vistoria técnica.
+- Plano Diretor concentra identidade cadastral, regras urbanísticas, estrutura territorial, riscos e diagnóstico técnico do terreno em um único módulo.
 - Object storage imutável para artefatos brutos e relatórios.
 - Valkey para cache/locks; NATS JetStream para eventos; OpenSearch para busca documental.
 - Martin MVT sobre views seguras.
@@ -65,11 +65,12 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 - motor jurídico temporal genérico e armazenamento de versões legais.
 - API `/api/v1`, GraphQL de composição, MVT e SSE de jobs.
 - relatório com status CONFIRMADO/CALCULADO/INFERIDO/PENDENTE/CONFLITANTE/NÃO DISPONÍVEL.
+- modelo de terreno com cotas, curvas de nível, declividade, orientação de vertente, drenagem, corte/aterro e métricas topográficas versionadas.
 
 ### Produto
 - shell modular no ZoLa com contexto global de imóvel ativo.
 - migração incremental das funções validadas para os novos contratos, sem reescrever ou substituir o mapa antes de paridade funcional.
-- Imóvel 360, RE Rural, Condomínio, Solar, A.I TEC e Prefeitura.
+- Plano Diretor/Terreno, RE Rural, Condomínio, Solar, A.I TEC e Prefeitura.
 - AI Core com A.I Cidades/A.I Condomínio/A.I TEC e evals.
 - Control Plane Admin + billing/CMS/support/releases.
 

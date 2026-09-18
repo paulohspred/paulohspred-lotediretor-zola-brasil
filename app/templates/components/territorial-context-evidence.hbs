@@ -33,27 +33,16 @@
               {{evidence.spatialOverlapPresentation.subjectGeometryAreaLabel}}
             </div>
           {{/if}}
-          <div>Fonte: {{evidence.snapshot.authority}}</div>
+          <div>Registro LoteDiretor versionado</div>
           <div>Snapshot SHA-256: <code>{{evidence.snapshot.sha256}}</code></div>
           {{#if evidence.calculationMethod}}
             <div>Método: <code>{{evidence.calculationMethod}}</code></div>
-          {{/if}}
-          {{#if evidence.citation.sourceUrl}}
-            <div>
-              <a
-                href={{evidence.citation.sourceUrl}}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Abrir consulta oficial capturada
-              </a>
-            </div>
           {{/if}}
         </div>
       {{/each}}
     </div>
     <p class="text-small">As relações acima são sobreposições geométricas
-      calculadas sobre snapshots oficiais. Elas não substituem, isoladamente, o
+      calculadas sobre registros versionados do LoteDiretor. Elas não substituem, isoladamente, o
       enquadramento normativo do imóvel.</p>
   {{else if @propertyId}}
     <p class="callout secondary text-small" data-test-territorial-context-empty>

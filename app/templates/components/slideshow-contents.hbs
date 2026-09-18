@@ -1,48 +1,37 @@
 <div class="slideshow-content">
   {{#if (eq @slideNumber 1)}}
     <div class="slide">
-      <p>Access what you're looking for more quickly using your <strong>search history</strong></p>
-      <img src="/img/slideshow/search-history.gif" alt="A video showing the search history functionality" />
+      <p>Encontre novamente um terreno usando o <strong>histórico de buscas do LoteDiretor</strong>.</p>
+      <img src="/img/slideshow/search-history.gif" alt="Histórico de buscas do LoteDiretor" />
     </div>
   {{else if (eq @slideNumber 2)}}
     <div class="slide">
-      <p>See more of the map by <strong>hiding the layers menu</strong></p>
-      <img src="/img/slideshow/toggle-sidebar.gif" alt="A video showing the sidebar toggle functionality" />
+      <p>Ganhe espaço no mapa <strong>recolhendo o painel de camadas</strong>.</p>
+      <img src="/img/slideshow/toggle-sidebar.gif" alt="Painel de camadas do LoteDiretor" />
     </div>
   {{else if (eq @slideNumber 3)}}
     <div class="slide">
-      <p><strong>Select two tax lots</strong> for side-by-side comparison</p>
-      <img src="/img/slideshow/side-by-side.gif" alt="A video showing the tax lot comparison functionality" />
+      <p><strong>Compare dois terrenos</strong> lado a lado.</p>
+      <img src="/img/slideshow/side-by-side.gif" alt="Comparação de terrenos no LoteDiretor" />
     </div>
   {{else if (eq @slideNumber 4)}}
     <div class="slide">
-      <p><strong>Turn off all layers</strong> with the click of a button</p>
-      <img src="/img/slideshow/toggle-all-layers-off.gif" alt="A video showing the all layer toggle button functionality" />
+      <p>Controle rapidamente a visualização <strong>ativando ou desativando camadas</strong>.</p>
+      <img src="/img/slideshow/toggle-all-layers-off.gif" alt="Controle de camadas do LoteDiretor" />
     </div>
   {{else if (eq @slideNumber 5)}}
     <div class="slide">
-      <p><strong>Bookmark your selected layers</strong> to return to later</p>
-      <img src="/img/slideshow/bookmark-layer-sets.gif" alt="A video showing the layer bookmark functionality" />
+      <p><strong>Salve terrenos e configurações</strong> para retomar uma análise depois.</p>
+      <img src="/img/slideshow/bookmark-layer-sets.gif" alt="Itens salvos no LoteDiretor" />
     </div>
   {{else if (eq @slideNumber 6)}}
     <div class="slide">
-      <p>Sum the area or distance of <strong>multiple measurements</strong></p>
-      <img src="/img/slideshow/multiple-measurements.gif" alt="A video showing the multiple measurement functionality" />
+      <p>Meça <strong>distâncias e áreas</strong> diretamente no mapa.</p>
+      <img src="/img/slideshow/multiple-measurements.gif" alt="Medições no LoteDiretor" />
     </div>
-  {{else if (eq @slideNumber 7)}}
+  {{else}}
     <div class="slide">
-      <p><strong>New links</strong> to sites related to the selected tax lot</p>
-      <img src="/img/slideshow/relevant-links.gif" alt="A video showing the relevant links functionality" />
+      <p>Use o <strong>Plano Diretor</strong> como diagnóstico integrado do terreno para arquitetura e engenharia.</p>
     </div>
-  {{else if (eq @slideNumber 8)}}
-    <div class="slide">
-      <p><strong>Navigate the official NYC Zoning Maps</strong> with our interactive index filter</p>
-      <img src="/img/slideshow/zoning-map-index.gif" alt="A video showing the Zoning Map Index functionality" />
-    </div>
-  {{else if (eq @slideNumber 9)}}
-  <div class="slide">
-    <p>View 50-foot transit station-adjacent areas with the <strong>Zoning for Accessibility</strong> layer—now available in the map panel.</p>
-    <img src="/img/slideshow/zoning-for-accessibility.gif" alt="A video showing the Zoning for Accessibility functionality" />
-  </div>
   {{/if}}
 </div>

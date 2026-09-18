@@ -1,11 +1,13 @@
 <ModuleShell
   @title="Plano Diretor"
-  @description="Contexto urbanístico do imóvel com base em camadas e fontes oficiais, sem substituir a leitura da legislação aplicável."
+  @description="Diagnóstico integrado do terreno para decisões de arquitetura, engenharia e viabilidade."
   as |activeProperty|>
-  <h3 class="header-medium">Escopo do módulo</h3>
-  <p>O shell está preparado para reunir macrozoneamento, macroáreas, eixos, operações urbanas e demais relações territoriais do imóvel ativo com evidência e proveniência.</p>
-  <p class="callout secondary text-small">Parâmetros legais somente serão exibidos quando vinculados à fonte normativa correspondente.</p>
+  <h3 class="header-medium">Análise integrada do terreno</h3>
+  <p>O Plano Diretor concentra o diagnóstico cadastral, territorial, urbanístico e de risco do imóvel ativo. Topografia, relevo, declividade, drenagem e viabilidade serão incorporados neste mesmo fluxo por etapas.</p>
+  <p class="callout secondary text-small">Resultados calculados são apresentados separadamente de regras normativas e documentos comprobatórios.</p>
+  <PropertySourceEvidence @propertyId={{activeProperty.id}} />
   <ZoningSourceEvidence @propertyId={{activeProperty.id}} />
   <TerritorialContextEvidence @propertyId={{activeProperty.id}} />
+  <PropertyRiskEvidence @propertyId={{activeProperty.id}} />
   <LegalSourceEvidence />
 </ModuleShell>

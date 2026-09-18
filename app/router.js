@@ -20,14 +20,12 @@ Router.map(function () {// eslint-disable-line
   this.route('features');
 
   // LoteDiretor modular product routes. They share the application map shell.
-  this.route('imovel-360');
   this.route('plano-diretor');
   this.route('rural');
   this.route('condominio');
   this.route('solar');
   this.route('ai-tec');
   this.route('prefeitura');
-  this.route('mais');
 
   // views for individual records of data
   this.route('map-feature', { path: '/l' }, function () {

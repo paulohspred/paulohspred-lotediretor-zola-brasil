@@ -121,7 +121,7 @@ module('Integration | Component | property-source-evidence', function (hooks) {
     assert.dom('[data-test-property-evidence-empty]').exists();
   });
 
-  test('it degrades without breaking Imóvel 360 when the Platform API is unavailable', async function (assert) {
+  test('it degrades without breaking Plano Diretor when the Platform API is unavailable', async function (assert) {
     this.owner.register('service:platform-api', ErrorPlatformApiStub);
 
     await render(hbs`<PropertySourceEvidence @propertyId="6492402" />`);

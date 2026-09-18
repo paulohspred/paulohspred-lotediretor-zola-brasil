@@ -24,7 +24,7 @@
   {{/if}}
   LOTE FISCAL
   <span class="medium-gray">|</span>
-  GEOSAMPA
+  LOTEDIRETOR
   <span data-test-sp-lot-id>{{@model.cd_identificador}}</span>
 </label>
 
@@ -53,62 +53,9 @@
   {{/if}}
 </p>
 
-<div style="color: #ae561f; font-size: 1.25rem; display: flex; flex-flow: row wrap; gap: 1.25rem; margin-bottom: 1rem;">
-  <a target="_blank" href="https://geosampa.prefeitura.sp.gov.br/" rel="noopener noreferrer">
-    <EmberPopover @side="top" @popperContainer="body" @popoverHideDelay={{0}}>
-      Abrir o imóvel no ecossistema oficial GeoSampa
-    </EmberPopover>
-    <FaIcon @icon="map-pin" />
-  </a>
-
-  {{#if @model.siszon.sourceUrl}}
-    <a target="_blank" href={{@model.siszon.sourceUrl}} rel="noopener noreferrer">
-      <EmberPopover @side="top" @popperContainer="body" @popoverHideDelay={{0}}>
-        Consultar zoneamento e histórico no SISZON
-      </EmberPopover>
-      <FaIcon @icon="bolt" />
-    </a>
-  {{/if}}
-
-  <a target="_blank" href="https://iptu.prefeitura.sp.gov.br/" rel="noopener noreferrer">
-    <EmberPopover @side="top" @popperContainer="body" @popoverHideDelay={{0}}>
-      Consultar IPTU e serviços tributários pelo SQL
-    </EmberPopover>
-    <FaIcon @icon="dollar-sign" />
-  </a>
-
-  <a target="_blank" href="https://prefeitura.sp.gov.br/web/licenciamento/w/servicos/6584" rel="noopener noreferrer">
-    <EmberPopover @side="top" @popperContainer="body" @popoverHideDelay={{0}}>
-      Consultar situação e histórico da edificação no CEDI
-    </EmberPopover>
-    <FaIcon @icon="people-roof" />
-  </a>
-
-  <a target="_blank" href={{@model.parametrosUrbanisticos.source.consolidatedUrl}} rel="noopener noreferrer">
-    <EmberPopover @side="top" @popperContainer="body" @popoverHideDelay={{0}}>
-      Abrir a legislação urbanística consolidada
-    </EmberPopover>
-    <FaIcon @icon="road" />
-  </a>
-
-  <a target="_blank" href="https://registradores.onr.org.br/" rel="noopener noreferrer">
-    <EmberPopover @side="top" @popperContainer="body" @popoverHideDelay={{0}}>
-      Acessar RI Digital / Registro de Imóveis para matrícula e certidões
-    </EmberPopover>
-    <FaIcon @icon="home" />
-  </a>
-
-  <a target="_blank" href="https://www.google.com/maps/search/?api=1&query={{@model.nm_logradouro_completo}}%20{{@model.cd_numero_porta}}%20Sao%20Paulo%20SP" rel="noopener noreferrer">
-    <EmberPopover @side="top" @popperContainer="body" @popoverHideDelay={{0}}>
-      Abrir endereço no Google Maps
-    </EmberPopover>
-    <FaIcon @icon="street-view" />
-  </a>
-</div>
-
 <section class="lot-details">
   <div class="data-grid">
-    <label class="data-label">Identificador GeoSampa</label>
+    <label class="data-label">Identificador territorial</label>
     <span class="datum">{{@model.cd_identificador}}</span>
   </div>
 
@@ -288,15 +235,12 @@
     {{/if}}
 
     <p class="text-small medium-gray" style="margin-top: 0.75rem; margin-bottom: 0.25rem;">
-      Fonte: {{@model.iptuAnual.source}} · arquivo {{@model.iptuAnual.sourceFile}}.
+      Registro fiscal integrado ao LoteDiretor.
     </p>
     <p class="text-small medium-gray" style="margin-bottom: 0.25rem;">
       {{@model.iptuAnual.note}}
     </p>
     <p class="text-small">
-      <a href={{@model.iptuAnual.sourcePage}} target="_blank" rel="noopener noreferrer">
-        Abrir GeoSampa
-      </a>
     </p>
   </section>
 {{/if}}
@@ -399,15 +343,6 @@
     <p class="text-small medium-gray" style="margin-bottom: 0.25rem;">
       {{@model.itbiHistorico.note}}
     </p>
-    <p class="text-small">
-      <a href={{@model.itbiHistorico.sourcePage}} target="_blank" rel="noopener noreferrer">
-        Abrir base oficial de transações ITBI
-      </a>
-      <span class="pipe">|</span>
-      <a href="https://registradores.onr.org.br/" target="_blank" rel="noopener noreferrer">
-        Confirmar matrícula / titularidade no RI Digital
-      </a>
-    </p>
   </section>
 {{/if}}
 
@@ -426,7 +361,7 @@
       <div style="border: 1px solid #ddd; padding: 0.75rem; margin-bottom: 1rem;">
         <h5 style="margin-bottom: 0.4rem;">Setor Censitário 2022</h5>
         <div class="data-grid">
-          <label class="data-label">Código IBGE do setor</label>
+          <label class="data-label">Código do setor censitário</label>
           <span class="datum"><strong>{{@model.entorno.censusSector.code}}</strong></span>
         </div>
         {{#if @model.entorno.censusSector.areaSquareMeters}}
@@ -436,7 +371,7 @@
           </div>
         {{/if}}
         <p class="text-small medium-gray" style="margin-bottom: 0;">
-          Fonte: {{@model.entorno.censusSector.source}}. Este código será usado para
+          Registro territorial do LoteDiretor. Este código será usado para
           associar os agregados do Censo 2022 sem inferir dados individuais.
         </p>
       </div>
@@ -480,7 +415,7 @@
     {{/each}}
 
     <p class="text-small medium-gray">
-      Fonte: {{@model.entorno.source}} · Método: {{@model.entorno.method}} ·
+      LoteDiretor · Método: {{@model.entorno.method}} ·
       Consulta: {{@model.entorno.generatedAt}}
     </p>
   </section>
@@ -545,11 +480,6 @@
         <p class="text-small medium-gray" style="margin-bottom: 0.25rem;">
           {{@model.parametrosUrbanisticos.environmentalQuota.note}}
         </p>
-        {{#if @model.siszon.sourceUrl}}
-          <a class="text-small" href={{@model.siszon.sourceUrl}} target="_blank" rel="noopener noreferrer">
-            Abrir confirmação oficial no SISZON
-          </a>
-        {{/if}}
       </div>
     {{/if}}
 
@@ -712,25 +642,8 @@
     {{/if}}
 
     <p class="text-small medium-gray" style="margin-bottom: 0.25rem;">
-      Fonte legal: {{@model.parametrosUrbanisticos.source.law}}, com redação considerada
+      Base legal registrada no LoteDiretor: {{@model.parametrosUrbanisticos.source.law}}, com redação considerada
       pela {{@model.parametrosUrbanisticos.source.amendment}}.
-    </p>
-    <p class="text-small" style="margin-bottom: 0.25rem;">
-      <a href={{@model.parametrosUrbanisticos.source.consolidatedUrl}} target="_blank" rel="noopener noreferrer">
-        Abrir texto consolidado da LPUOS
-      </a>
-      <span class="pipe">|</span>
-      <a href={{@model.parametrosUrbanisticos.source.law18177Url}} target="_blank" rel="noopener noreferrer">
-        Abrir Lei 18.177/2024
-      </a>
-      <span class="pipe">|</span>
-      <a href={{@model.parametrosUrbanisticos.source.tableUrl}} target="_blank" rel="noopener noreferrer">
-        Abrir Quadro 3 oficial
-      </a>
-      <span class="pipe">|</span>
-      <a href={{@model.parametrosUrbanisticos.source.parcelTableUrl}} target="_blank" rel="noopener noreferrer">
-        Abrir Quadro 2A oficial
-      </a>
     </p>
     <p class="text-small medium-gray">
       Base jurídica revisada em {{@model.parametrosUrbanisticos.source.reviewedAt}}.
@@ -832,13 +745,7 @@
     <p class="text-small medium-gray">{{@model.usosUrbanisticos.caveat}}</p>
     <p class="text-small medium-gray">{{@model.usosUrbanisticos.installation.caveat}}</p>
     <p class="text-small">
-      <a href={{@model.usosUrbanisticos.source.url}} target="_blank" rel="noopener noreferrer">
-        Abrir Quadro 4 oficial
-      </a>
       <span class="pipe">|</span>
-      <a href={{@model.usosUrbanisticos.installation.source.url}} target="_blank" rel="noopener noreferrer">
-        Abrir Quadro 4A oficial — condições de instalação
-      </a>
     </p>
   </section>
 {{/if}}
@@ -852,7 +759,7 @@
       Enquadramento territorial
     </h3>
     <p class="text-small dark-gray">
-      Interseções espaciais identificadas nas camadas oficiais do GeoSampa.
+      Interseções espaciais calculadas pelo LoteDiretor.
       Este bloco confirma incidência geográfica; a interpretação jurídica e os
       parâmetros construtivos serão resolvidos separadamente pelo motor legal.
     </p>
@@ -880,7 +787,7 @@
           </div>
         {{/each}}
         <p class="text-small medium-gray" style="margin-bottom: 0;">
-          {{section.statusLabel}} · Fonte: GeoSampa
+          {{section.statusLabel}} · LoteDiretor
         </p>
       </div>
     {{/each}}
@@ -916,7 +823,7 @@
     {{#if @model.siszon.available}}
       {{#if @model.siszon.roadClassification.length}}
         <details style="margin-bottom: 0.75rem;">
-          <summary class="text-small">Classificação viária — SISZON</summary>
+          <summary class="text-small">Classificação viária</summary>
           <ul class="text-small">
             {{#each @model.siszon.roadClassification as |road|}}
               <li>{{road.classification}} — {{road.street}} {{#if road.status}}({{road.status}}){{/if}}</li>
@@ -926,7 +833,7 @@
       {{/if}}
       {{#if @model.siszon.zoningHistory.length}}
         <details style="margin-bottom: 0.75rem;">
-          <summary class="text-small">Histórico de zoneamento — SISZON</summary>
+          <summary class="text-small">Histórico de zoneamento</summary>
           <ul class="text-small">
             {{#each @model.siszon.zoningHistory as |history|}}
               <li>{{history.type}} {{history.perimeter}} · {{history.legislation}} · {{history.status}}</li>
@@ -937,7 +844,7 @@
     {{/if}}
 
     <p class="text-small medium-gray">
-      Fonte: {{@model.enquadramentoTerritorial.source}} ·
+      LoteDiretor ·
       Método: {{@model.enquadramentoTerritorial.method}} ·
       CRS de análise: {{@model.enquadramentoTerritorial.analysisCrs}} ·
       Consulta: {{@model.enquadramentoTerritorial.generatedAt}}
@@ -947,5 +854,5 @@
 
 <hr class="hide-for-print" />
 <p class="text-small dark-gray">
-  Fonte cadastral: GeoSampa — Prefeitura de São Paulo.
+  Registro cadastral integrado ao LoteDiretor.
 </p>

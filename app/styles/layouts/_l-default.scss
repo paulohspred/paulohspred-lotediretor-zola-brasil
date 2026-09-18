@@ -327,3 +327,21 @@ body.index {
     color: white;
   }
 }
+.site-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.site-module-nav {
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+
+  a {
+    display: inline-block;
+    margin-right: 0.65rem;
+  }
+}

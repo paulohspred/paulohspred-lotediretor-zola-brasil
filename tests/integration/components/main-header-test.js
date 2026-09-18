@@ -10,13 +10,15 @@ module('Integration | Component | main-header', function (hooks) {
     await render(hbs`<MainHeader />`);
 
     assert.ok(this.element);
-    assert.dom('a[href="/imovel-360"]').exists();
     assert.dom('a[href="/plano-diretor"]').exists();
     assert.dom('a[href="/rural"]').exists();
     assert.dom('a[href="/condominio"]').exists();
     assert.dom('a[href="/solar"]').exists();
     assert.dom('a[href="/ai-tec"]').exists();
     assert.dom('a[href="/prefeitura"]').exists();
-    assert.dom('a[href="/mais"]').exists();
+    assert.dom('a[href="/about"]').exists();
+    assert.dom('a[href="/features"]').exists();
+    assert.dom('a[href="/data"]').exists();
+    assert.dom('a[href="/bookmarks"]').exists();
   });
 });

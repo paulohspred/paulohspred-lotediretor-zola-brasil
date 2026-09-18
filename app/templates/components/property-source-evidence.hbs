@@ -5,16 +5,16 @@
 >
   <h3 class="header-medium">Identidade cadastral versionada</h3>
   {{#if this.loading}}
-    <p class="text-small">Consultando evidências do imóvel na Platform API…</p>
+    <p class="text-small">Consultando dados versionados do LoteDiretor…</p>
   {{else if this.errorMessage}}
     <p class="callout warning text-small" data-test-property-evidence-error>
       As evidências versionadas do imóvel estão temporariamente indisponíveis. O relatório atual continua operando.
     </p>
   {{else if this.identityEvidence}}
     <div class="callout secondary text-small" data-test-property-evidence>
-      <strong>GeoSampa — lote {{this.identityEvidence.valueText}}</strong>
+      <strong>LoteDiretor — lote {{this.identityEvidence.valueText}}</strong>
       <div>Status: {{this.identityEvidence.statusLabel}}</div>
-      <div>Fonte: {{this.identityEvidence.snapshot.authority}}</div>
+      <div>Registro LoteDiretor versionado</div>
       <div>Snapshot SHA-256: <code>{{this.identityEvidence.snapshot.sha256}}</code></div>
 
       {{#if this.displayFacts.length}}
@@ -29,21 +29,13 @@
           {{/each}}
         </dl>
       {{/if}}
-
-      {{#if this.citation.sourceUrl}}
-        <div>
-          <a href={{this.citation.sourceUrl}} target="_blank" rel="noopener noreferrer">
-            Abrir consulta oficial capturada
-          </a>
-        </div>
-      {{/if}}
     </div>
     <p class="text-small">
-      Estes dados cadastrais foram lidos do snapshot oficial do GeoSampa. Não comprovam propriedade dominial nem substituem certidão ou matrícula.
+      Estes dados cadastrais fazem parte do registro versionado do LoteDiretor. Não comprovam propriedade dominial nem substituem certidão ou matrícula.
     </p>
   {{else}}
     <p class="callout secondary text-small" data-test-property-evidence-empty>
-      Ainda não há snapshot versionado do GeoSampa para este imóvel. O relatório atual permanece disponível abaixo.
+      Ainda não há registro versionado do LoteDiretor para este imóvel. O relatório atual permanece disponível abaixo.
     </p>
   {{/if}}
 </section>

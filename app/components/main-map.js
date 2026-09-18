@@ -274,7 +274,7 @@ export default class MainMap extends Component {
           type: 'raster',
           tiles: [wmsUrl],
           tileSize: 256,
-          attribution: 'GeoSampa — Prefeitura de São Paulo',
+          attribution: 'LoteDiretor',
         });
         map.addLayer(
           {
@@ -488,7 +488,7 @@ export default class MainMap extends Component {
       source.setData(geojson);
     } catch (error) {
       if (error.name !== 'AbortError') {
-        console.error('Falha ao carregar lotes do GeoSampa', error);
+        console.error('Falha ao carregar lotes do LoteDiretor', error);
       }
     }
   }

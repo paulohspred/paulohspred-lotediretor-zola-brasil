@@ -21,14 +21,12 @@ module('Acceptance | modular shell', function (hooks) {
       assert.dom('[data-test-module-shell]').includesText(title);
     };
 
-    await assertModuleRoute('/imovel-360', 'Imóvel 360');
     await assertModuleRoute('/plano-diretor', 'Plano Diretor');
     await assertModuleRoute('/rural', 'Rural');
     await assertModuleRoute('/condominio', 'Condomínio');
     await assertModuleRoute('/solar', 'Solar');
     await assertModuleRoute('/ai-tec', 'A.I TEC');
     await assertModuleRoute('/prefeitura', 'Prefeitura');
-    await assertModuleRoute('/mais', 'Mais');
   });
 
   test('the active property persists while navigating between modules', async function (assert) {

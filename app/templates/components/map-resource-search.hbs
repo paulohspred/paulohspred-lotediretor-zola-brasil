@@ -18,7 +18,7 @@
     <ul class="no-bullet" style="background:white; border:1px solid #ddd; margin:0; padding:0.35rem; max-height:18rem; overflow:auto;">
       {{#each this.results as |result|}}
         <li>
-          <button class="button clear expanded text-left" type="button" {{on "click" (fn this.selectResult result)}}>
+          <button data-test-search-result class="button clear expanded text-left" type="button" {{on "click" (fn this.selectResult result)}}>
             <strong>{{result.label}}</strong><br />
             <small>{{result.subtitle}}</small>
           </button>
@@ -26,11 +26,11 @@
       {{/each}}
     </ul>
   {{else if this.searchHistory.length}}
-    <details style="margin-top:0.35rem;">
+    <details data-test-search-history style="margin-top:0.35rem;">
       <summary class="text-small">Buscas recentes</summary>
       <ul class="no-bullet">
         {{#each this.searchHistory as |result|}}
-          <li><button class="button clear tiny" type="button" {{on "click" (fn this.selectResult result)}}>{{result.label}}</button></li>
+          <li><button data-test-search-history-item class="button clear tiny" type="button" {{on "click" (fn this.selectResult result)}}>{{result.label}}</button></li>
         {{/each}}
       </ul>
     </details>

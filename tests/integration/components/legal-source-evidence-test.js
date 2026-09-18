@@ -50,19 +50,14 @@ module('Integration | Component | legal-source-evidence', function (hooks) {
       .includesText('LEI Nº 16.402 DE 22 DE MARÇO DE 2016');
     assert
       .dom('[data-test-platform-evidence]')
-      .includesText('Prefeitura de São Paulo / Catálogo de Legislação');
+      .includesText('Registro LoteDiretor versionado');
     assert.dom('[data-test-platform-evidence]').includesText('abc123');
     assert
       .dom('[data-test-legal-source-evidence]')
       .includesText(
         'não afirma, por si só, quais parâmetros legais se aplicam'
       );
-    assert
-      .dom('[data-test-platform-evidence] a')
-      .hasAttribute(
-        'href',
-        'https://legislacao.prefeitura.sp.gov.br/lei-16402-de-22-de-marco-de-2016'
-      );
+    assert.dom('[data-test-platform-evidence] a').doesNotExist();
   });
 
   test('it handles a source without evidence', async function (assert) {

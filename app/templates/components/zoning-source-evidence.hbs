@@ -16,7 +16,7 @@
         <div data-test-zoning-evidence-row>
           <strong>{{evidence.valueText}}</strong>
           <div>Status: {{evidence.statusLabel}}</div>
-          <div>Fonte: {{evidence.snapshot.authority}}</div>
+          <div>Registro LoteDiretor versionado</div>
           <div>Snapshot SHA-256: <code>{{evidence.snapshot.sha256}}</code></div>
           {{#if evidence.spatialOverlapPresentation}}
             <div data-test-zoning-overlap-coverage>
@@ -29,17 +29,10 @@
           {{#if evidence.calculationMethod}}
             <div>Método: <code>{{evidence.calculationMethod}}</code></div>
           {{/if}}
-          {{#if evidence.citation.sourceUrl}}
-            <div>
-              <a href={{evidence.citation.sourceUrl}} target="_blank" rel="noopener noreferrer">
-                Abrir consulta oficial capturada
-              </a>
-            </div>
-          {{/if}}
         </div>
       {{/each}}
     </div>
-    <p class="text-small">O resultado indica sobreposição geométrica calculada entre a geometria versionada do lote e sua camada oficial de zoneamento. Ele não determina, isoladamente, o enquadramento jurídico nem os parâmetros construtivos aplicáveis.</p>
+    <p class="text-small">O resultado indica sobreposição geométrica calculada entre a geometria versionada do lote e sua camada territorial versionada de zoneamento. Ele não determina, isoladamente, o enquadramento jurídico nem os parâmetros construtivos aplicáveis.</p>
   {{else if @propertyId}}
     <p class="callout secondary text-small" data-test-zoning-evidence-empty>
       Ainda não há sobreposição de zoneamento versionada para este imóvel.
