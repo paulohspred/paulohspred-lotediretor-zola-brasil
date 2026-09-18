@@ -13,7 +13,7 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 | 0 | Fundação | **PARCIAL / RUNTIME + PLATFORM API PROVADOS** | Auth/realm Keycloak, tenant context, app shells e promoção para staging |
 | 1 | Core territorial | **PARCIAL / SP FORTE + SNAPSHOT INGEST + EVIDENCE POR SUJEITO** | ampliar evidências territoriais por imóvel, IBGE nacional, Parcel Resolver genérico, MVT temático e relatório v1 por API |
 | 2 | UX cliente | **PARCIAL / ZOLA MODULAR SHELL + PROVENIÊNCIA** | expandir integração dos módulos com o novo core preservando mapa, busca, camadas e fluxos existentes |
-| 3 | Plano Diretor / Terreno | **PARCIAL / MATERIALIZAÇÃO AUTOMÁTICA + IMÓVEL ATIVO** | adicionar topografia, relevo, declividade, drenagem, envelope e demais análises de engenharia |
+| 3 | Plano Diretor / Terreno | **PARCIAL / MDT 2020 + MATERIALIZAÇÃO AUTOMÁTICA** | adicionar TIN/grade, declividade local, drenagem, perfis, corte/aterro, envelope e demais análises de engenharia |
 | 4 | RE Rural | **NÃO INICIADA** | CAR/SIGEF/SNCR/CIB/IBAMA/INPE + overlaps/monitoring |
 | 5 | AI Core | **NÃO INICIADA** | AI Gateway, ingestão, OpenSearch híbrido, A.I Cidades, tools e evals |
 | 6 | Condomínio | **NÃO INICIADA** | upload privado, regras/atas, A.I Condomínio, dashboard/relatório |
@@ -49,6 +49,8 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 - Plano Diretor concentra identidade cadastral, regras urbanísticas, estrutura territorial, riscos e diagnóstico técnico do terreno em um único módulo.
 - Materialização por imóvel deixou de depender de execução manual: a Platform API cria jobs idempotentes persistentes, um worker permanente processa cadastro/zoneamento/contexto territorial/risco, e o Plano Diretor acompanha `QUEUED/RUNNING/SUCCEEDED/FAILED` e recarrega as evidências ao concluir.
 - O imóvel ativo pode ser restaurado diretamente por URL (`/plano-diretor?imovel=<id>`), permitindo refresh e compartilhamento do diagnóstico sem perder o contexto territorial.
+- A topografia agora possui fila própria e independente: o worker identifica as folhas MDT 2020 que cobrem o lote, baixa LAZ sob demanda, preserva cada insumo por SHA-256, gera manifesto versionado e publica métricas `SP_LOT_TERRAIN_*` com citações, proveniência e quality assessment.
+- O Plano Diretor exibe cotas mínima/máxima/média/mediana, amplitude do relevo, densidade de pontos e gradiente/orientação global do plano de melhor ajuste. Esse gradiente é uma síntese do terreno e não equivale a declividade local/máxima nem a levantamento topográfico executivo.
 - Object storage imutável para artefatos brutos e relatórios.
 - Valkey para cache/locks; NATS JetStream para eventos; OpenSearch para busca documental.
 - Martin MVT sobre views seguras.

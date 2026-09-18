@@ -845,6 +845,46 @@ module.exports = function (app) {
     }
   });
 
+  app.get(
+    '/api/platform/properties/:lotId/terrain/materialization',
+    async (req, res) => {
+      try {
+        const upstream = await requestPlatformApiJson(
+          `/api/v1/properties/${encodeURIComponent(
+            req.params.lotId
+          )}/terrain/materialization`,
+          { municipalityIbge: req.query.municipalityIbge || '3550308' }
+        );
+        res.set('Cache-Control', 'no-store');
+        res.status(upstream.status).json(upstream.payload || {});
+      } catch (_error) {
+        res.status(502).json({ error: 'Platform API indisponível' });
+      }
+    }
+  );
+
+  app.post(
+    '/api/platform/properties/:lotId/terrain/materialize',
+    async (req, res) => {
+      try {
+        const upstream = await requestPlatformApiJson(
+          `/api/v1/properties/${encodeURIComponent(
+            req.params.lotId
+          )}/terrain/materialize`,
+          {
+            municipalityIbge: req.query.municipalityIbge || '3550308',
+            force: req.query.force,
+          },
+          'POST'
+        );
+        res.set('Cache-Control', 'no-store');
+        res.status(upstream.status).json(upstream.payload || {});
+      } catch (_error) {
+        res.status(502).json({ error: 'Platform API indisponível' });
+      }
+    }
+  );
+
   app.get('/api/platform/evidence', async (req, res) => {
     try {
       const upstream = await requestPlatformApiJson(

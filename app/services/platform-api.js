@@ -43,4 +43,21 @@ export default class PlatformApiService extends Service {
       { method: 'POST' }
     );
   }
+
+  async getTerrainMaterialization(propertyId) {
+    const id = encodeURIComponent(String(propertyId));
+    return this.requestJson(
+      `/api/platform/properties/${id}/terrain/materialization?municipalityIbge=3550308`
+    );
+  }
+
+  async requestTerrainMaterialization(propertyId, { force = false } = {}) {
+    const id = encodeURIComponent(String(propertyId));
+    const query = new URLSearchParams({ municipalityIbge: '3550308' });
+    if (force) query.set('force', 'true');
+    return this.requestJson(
+      `/api/platform/properties/${id}/terrain/materialize?${query.toString()}`,
+      { method: 'POST' }
+    );
+  }
 }

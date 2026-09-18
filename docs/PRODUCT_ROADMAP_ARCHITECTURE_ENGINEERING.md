@@ -81,10 +81,22 @@ Pendente:
 
 **Objetivo:** transformar o lote 2D em um modelo técnico de terreno.
 
-**Em implementação:**
+**Implementado nesta etapa:**
 - catálogo de mapa com curvas de nível mestras e intermediárias, pontos cotados e classes de declividade;
 - cotas/altitudes rotuladas em metros diretamente no mapa;
-- fonte topográfica municipal registrada no Source Registry para proveniência e evolução posterior para MDT/TIN.
+- fonte topográfica municipal registrada no Source Registry com endpoints de índice WFS e download por folha;
+- materialização topográfica independente por lote, com fila persistente, retries e worker dedicado;
+- seleção das folhas MDT 2020 necessárias para o lote, download LAZ sob demanda, SHA-256, armazenamento content-addressed e manifesto imutável dos insumos;
+- recorte dos pontos MDT pela geometria versionada do lote em SIRGAS 2000 / UTM 23S (EPSG:31983), removendo duplicatas em emendas de folhas;
+- evidências calculadas de cota mínima, máxima, média, mediana, amplitude, quantidade/densidade de pontos, declividade/inclinação global do plano de melhor ajuste, orientação descendente e RMSE;
+- citações, proveniência para a geometria do lote e quality assessment técnico em cada métrica;
+- Plano Diretor acompanha a fila topográfica separadamente e exibe os resultados sem bloquear cadastro, zoneamento ou riscos quando a topografia falha.
+
+**Ainda pendente nesta fase:**
+- TIN/grade raster versionada e curvas derivadas configuráveis;
+- declividade local/máxima e distribuição por faixas calculadas a partir da superfície;
+- perfis longitudinal/transversal, talvegues/divisores, drenagem e bacias de contribuição;
+- greide da rua, acessos, platôs e estimativas de corte/aterro.
 
 Dados e modelo:
 - Modelo Digital do Terreno por lote + entorno;
