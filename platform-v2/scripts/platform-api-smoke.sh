@@ -125,6 +125,7 @@ assert '/api/v1/evidence' in j['paths']
 assert '/api/v1/evidence/{id}' in j['paths']
 assert '/api/v1/properties/{lotId}/terrain/materialization' in j['paths']
 assert '/api/v1/properties/{lotId}/terrain/materialize' in j['paths']
+assert '/api/v1/properties/{lotId}/terrain/product' in j['paths']
 schemas=j.get('components',{}).get('schemas',{})
 assert 'SourceRegistryEntry' in schemas, j.get('components')
 assert 'SourceSnapshotRecord' in schemas, j.get('components')
@@ -133,6 +134,10 @@ assert 'EvidenceSpatialOverlap' in schemas, j.get('components')
 overlap=schemas['EvidenceRecord']['properties'].get('spatialOverlap', {})
 assert overlap.get('allOf') or overlap.get('$ref'), overlap
 PY
+
+
+test "$(curl -sS -o /tmp/ld-api-terrain-product-notfound -w '%{http_code}' 'http://127.0.0.1:54000/api/v1/properties/123456789/terrain/product?municipalityIbge=3550308&contourIntervalM=1')" = 404
+test "$(curl -sS -o /tmp/ld-api-terrain-product-bad-interval -w '%{http_code}' 'http://127.0.0.1:54000/api/v1/properties/123456789/terrain/product?municipalityIbge=3550308&contourIntervalM=3')" = 400
 
 curl -fsS -D /tmp/ld-api-headers -o /dev/null http://127.0.0.1:54000/api/v1/health
 grep -qi '^x-correlation-id:' /tmp/ld-api-headers

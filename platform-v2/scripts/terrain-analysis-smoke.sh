@@ -72,6 +72,13 @@ with tempfile.TemporaryDirectory(prefix='terrain-smoke-') as temp:
     assert abs(result['elevationMaxM'] - 100.7) < 0.01, result
     assert abs(result['reliefAmplitudeM'] - 0.7) < 0.02, result
     assert abs(result['bestFitPlane']['slopePercent'] - expected_slope) < 0.05, result
+    assert result['analysisVersion'] == 'terrain-mdt-2020-surface-v2', result
+    assert abs(result['localSlope']['medianPercent'] - expected_slope) < 0.2, result
+    assert abs(result['localSlope']['p95Percent'] - expected_slope) < 0.2, result
+    assert result['surface']['version'] == 'terrain-surface-v2', result
+    assert result['surface']['grid']['resolutionM'] == 1.0, result
+    assert result['surface']['tinTriangleCount'] > 0, result
+    assert set(result['surface']['contours']) == {'0.5','1.0','2.0','5.0'}, result
     assert result['inputs'][0]['sheetCode'] == 'TEST', result
-    print(json.dumps({'terrain-analysis-smoke': 'OK', 'slopePercent': result['bestFitPlane']['slopePercent']}))
+    print(json.dumps({'terrain-analysis-smoke': 'OK', 'globalSlopePercent': result['bestFitPlane']['slopePercent'], 'localP95Percent': result['localSlope']['p95Percent'], 'tinTriangles': result['surface']['tinTriangleCount']}))
 PY

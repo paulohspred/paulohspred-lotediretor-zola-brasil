@@ -14,7 +14,7 @@ const SUBJECT_TYPE = 'SP_LOT';
 const SOURCE_CODE = 'PMSP_TERRITORIO_TOPOGRAFIA';
 const INDEX_TYPE_NAME = 'geoportal:quadricula_folha_mdt_mds_2020';
 const DOWNLOAD_VERSION = 'terrain-mdt-2020-download-v1';
-const ANALYSIS_VERSION = 'terrain-mdt-2020-analysis-v1';
+const ANALYSIS_VERSION = 'terrain-mdt-2020-surface-v2';
 const MAX_SHEETS = 8;
 const MAX_ZIP_BYTES = 50 * 1024 * 1024;
 
@@ -88,6 +88,7 @@ type TerrainAnalysis = {
   verticalDatum: string | string[] | null;
   lotAreaM2: number;
   pointCount: number;
+  contextPointCount: number;
   pointDensityPerM2: number;
   elevationMinM: number;
   elevationMaxM: number;
@@ -103,11 +104,47 @@ type TerrainAnalysis = {
     downslopeAspectLabel: string;
     rmseM: number;
   };
+  localSlope: {
+    meanPercent: number;
+    medianPercent: number;
+    p95Percent: number;
+    maxPercent: number;
+    maxDegrees: number;
+    maxPoint: {
+      easting: number;
+      northing: number;
+      longitude: number;
+      latitude: number;
+      slopePercent: number;
+      slopeDegrees: number;
+    };
+    bands: Array<{
+      label: string;
+      lowerPercent: number;
+      upperPercent: number | null;
+      sampleCount: number;
+      sharePercent: number;
+      approxAreaM2: number;
+    }>;
+    gridResolutionM: number;
+    method: string;
+  };
+  surface: {
+    version: string;
+    contextBufferM: number;
+    grid: Record<string, unknown>;
+    tin: Record<string, unknown>;
+    tinTriangleCount: number;
+    tinAreaWeightedMeanSlopePercent: number | null;
+    contours: Record<string, Record<string, unknown>>;
+    contourIntervalsM: number[];
+  };
   lowPoint: TerrainPoint;
   highPoint: TerrainPoint;
   inputs: Array<{
     sheetCode: string;
     pointCountTotal: number;
+    pointCountContext: number;
     pointCountInsideLot: number;
     lazFileName: string;
     epsg: number;
@@ -593,6 +630,69 @@ function factsFromAnalysis(analysis: TerrainAnalysis): EvidenceFact[] {
       unit: 'm',
       calculationMethod: planeMethod,
     },
+    {
+      evidenceType: 'SP_LOT_TERRAIN_LOCAL_SLOPE_MEAN',
+      locator: 'analysis:surface:grid-1m:slope-mean',
+      valueText: metric(analysis.localSlope.meanPercent, 2),
+      unit: '%',
+      calculationMethod: analysis.localSlope.method,
+    },
+    {
+      evidenceType: 'SP_LOT_TERRAIN_LOCAL_SLOPE_MEDIAN',
+      locator: 'analysis:surface:grid-1m:slope-median',
+      valueText: metric(analysis.localSlope.medianPercent, 2),
+      unit: '%',
+      calculationMethod: analysis.localSlope.method,
+    },
+    {
+      evidenceType: 'SP_LOT_TERRAIN_LOCAL_SLOPE_P95',
+      locator: 'analysis:surface:grid-1m:slope-p95',
+      valueText: metric(analysis.localSlope.p95Percent, 2),
+      unit: '%',
+      calculationMethod: analysis.localSlope.method,
+    },
+    {
+      evidenceType: 'SP_LOT_TERRAIN_LOCAL_SLOPE_MAX',
+      locator: 'analysis:surface:grid-1m:slope-max',
+      valueText: metric(analysis.localSlope.maxPercent, 2),
+      unit: '%',
+      geometry: {
+        type: 'Point',
+        coordinates: [
+          analysis.localSlope.maxPoint.longitude,
+          analysis.localSlope.maxPoint.latitude,
+        ],
+      },
+      calculationMethod: analysis.localSlope.method,
+    },
+    {
+      evidenceType: 'SP_LOT_TERRAIN_LOCAL_SLOPE_MAX_DEGREES',
+      locator: 'analysis:surface:grid-1m:slope-max-degrees',
+      valueText: metric(analysis.localSlope.maxDegrees, 2),
+      unit: '°',
+      calculationMethod: analysis.localSlope.method,
+    },
+    {
+      evidenceType: 'SP_LOT_TERRAIN_SLOPE_DISTRIBUTION',
+      locator: 'analysis:surface:grid-1m:slope-distribution',
+      valueText: analysis.localSlope.bands
+        .map(
+          (band) =>
+            `${band.label}: ${metric(band.sharePercent, 1)}%`,
+        )
+        .join('; '),
+      calculationMethod: analysis.localSlope.method,
+    },
+    {
+      evidenceType: 'SP_LOT_TERRAIN_SURFACE_MODEL',
+      locator: 'analysis:surface:model',
+      valueText: `${analysis.surface.version}; grade ${metric(
+        analysis.localSlope.gridResolutionM,
+        1,
+      )} m; ${analysis.surface.tinTriangleCount} células TIN`,
+      calculationMethod:
+        'Versioned terrain product containing a 1 m interpolated grid, clipped TIN polygons and derived contour sets at 0.5/1/2/5 m intervals',
+    },
   ];
 }
 
@@ -665,6 +765,13 @@ async function persistEvidence(
             pointDensityPerM2: analysis.pointDensityPerM2,
             inputSheetCodes: inputs.map((input) => input.sheetCode),
             bestFitPlaneRmseM: analysis.bestFitPlane.rmseM,
+            localSlopeGridResolutionM: analysis.localSlope.gridResolutionM,
+            localSlopeP95Percent: analysis.localSlope.p95Percent,
+            localSlopeMaxPercent: analysis.localSlope.maxPercent,
+            slopeBands: analysis.localSlope.bands,
+            surfaceVersion: analysis.surface.version,
+            tinTriangleCount: analysis.surface.tinTriangleCount,
+            contourIntervalsM: analysis.surface.contourIntervalsM,
           }),
         ],
       );
@@ -841,6 +948,7 @@ async function main(): Promise<void> {
     console.log(
       JSON.stringify({
         lotId: options.lotId,
+        analysisVersion: ANALYSIS_VERSION,
         manifestSnapshotId: manifestSnapshot.id,
         inputSheetCodes: inputs.map((input) => input.sheetCode),
         pointCount: analysis.pointCount,

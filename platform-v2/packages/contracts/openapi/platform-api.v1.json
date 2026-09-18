@@ -869,6 +869,61 @@
         ]
       }
     },
+    "/api/v1/properties/{lotId}/terrain/product": {
+      "get": {
+        "operationId": "TerrainProductController_product",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lotId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "municipalityIbge",
+            "required": false,
+            "schema": {
+              "example": "3550308",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "contourIntervalM",
+            "required": false,
+            "schema": {
+              "enum": [
+                0.5,
+                1,
+                2,
+                5
+              ],
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Get the latest versioned terrain surface product for one lot",
+        "tags": [
+          "terrain-materialization"
+        ]
+      }
+    },
     "/api/v1/source-snapshots": {
       "get": {
         "operationId": "SourceSnapshotController_list",

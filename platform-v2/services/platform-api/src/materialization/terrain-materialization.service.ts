@@ -5,6 +5,8 @@ import {
   PropertyMaterializationState,
 } from './materialization.types';
 
+const TERRAIN_ANALYSIS_VERSION = 'terrain-mdt-2020-surface-v2';
+
 type JobRow = {
   id: string;
   municipality_ibge: string;
@@ -39,6 +41,7 @@ SELECT
     WHERE e.subject_type = j.subject_type
       AND e.subject_id = j.subject_id
       AND e.evidence_type LIKE 'SP_LOT_TERRAIN_%'
+      AND e.parser_version = 'terrain-mdt-2020-surface-v2'
   ) AS evidence_count
 FROM core.terrain_materialization_job j
 JOIN core.municipality m ON m.id = j.municipality_id
@@ -90,6 +93,7 @@ export class TerrainMaterializationService {
            AND j.subject_type = 'SP_LOT'
            AND j.subject_id = $2
            AND j.status IN ('QUEUED','RUNNING','SUCCEEDED')
+           AND j.metadata->>'analysisVersion' = $3
          ORDER BY
            CASE j.status
              WHEN 'RUNNING' THEN 1
@@ -98,9 +102,12 @@ export class TerrainMaterializationService {
            END,
            j.requested_at DESC
          LIMIT 1`,
-        [municipalityId, lotId],
+        [municipalityId, lotId, TERRAIN_ANALYSIS_VERSION],
       );
       if (existing.rows[0]) return this.mapRow(existing.rows[0]);
+
+      const current = await this.latest(lotId, municipalityIbge);
+      if (current.status === 'SUCCEEDED') return current;
     }
 
     await this.database.query(
@@ -121,6 +128,7 @@ export class TerrainMaterializationService {
           requestedAt: new Date().toISOString(),
           force,
           prerequisiteLotGeometryEvidenceId: lotGeometry.rows[0].id,
+          analysisVersion: TERRAIN_ANALYSIS_VERSION,
         }),
       ],
     );
@@ -134,26 +142,70 @@ export class TerrainMaterializationService {
     lotId: string,
     municipalityIbge = '3550308',
   ): Promise<PropertyMaterializationState> {
-    const result = await this.database.query<JobRow>(
+    const active = await this.database.query<JobRow>(
       `${JOB_SELECT}
        WHERE m.ibge_code = $1
          AND j.subject_type = 'SP_LOT'
          AND j.subject_id = $2
-       ORDER BY j.requested_at DESC, j.id DESC
+         AND j.metadata->>'analysisVersion' = $3
+         AND j.status IN ('QUEUED','RUNNING')
+       ORDER BY
+         CASE j.status WHEN 'RUNNING' THEN 1 ELSE 2 END,
+         j.requested_at DESC,
+         j.id DESC
        LIMIT 1`,
-      [municipalityIbge, lotId],
+      [municipalityIbge, lotId, TERRAIN_ANALYSIS_VERSION],
     );
-
-    if (result.rows[0]) return this.mapRow(result.rows[0]);
+    if (active.rows[0]) return this.mapRow(active.rows[0]);
 
     const evidence = await this.database.query<{ count: string }>(
       `SELECT count(*)::text AS count
        FROM evidence.evidence
        WHERE subject_type = 'SP_LOT'
          AND subject_id = $1
-         AND evidence_type LIKE 'SP_LOT_TERRAIN_%'`,
-      [lotId],
+         AND evidence_type LIKE 'SP_LOT_TERRAIN_%'
+         AND parser_version = $2`,
+      [lotId, TERRAIN_ANALYSIS_VERSION],
     );
+    const evidenceCount = Number(evidence.rows[0]?.count ?? 0);
+
+    if (evidenceCount > 0) {
+      const succeeded = await this.database.query<JobRow>(
+        `${JOB_SELECT}
+         WHERE m.ibge_code = $1
+           AND j.subject_type = 'SP_LOT'
+           AND j.subject_id = $2
+           AND j.metadata->>'analysisVersion' = $3
+           AND j.status = 'SUCCEEDED'
+         ORDER BY j.finished_at DESC NULLS LAST, j.requested_at DESC, j.id DESC
+         LIMIT 1`,
+        [municipalityIbge, lotId, TERRAIN_ANALYSIS_VERSION],
+      );
+      if (succeeded.rows[0]) return this.mapRow(succeeded.rows[0]);
+
+      return {
+        municipalityIbge,
+        subjectType: 'SP_LOT',
+        subjectId: lotId,
+        status: 'SUCCEEDED',
+        attemptCount: 0,
+        maxAttempts: 3,
+        evidenceCount,
+      };
+    }
+
+    const failed = await this.database.query<JobRow>(
+      `${JOB_SELECT}
+       WHERE m.ibge_code = $1
+         AND j.subject_type = 'SP_LOT'
+         AND j.subject_id = $2
+         AND j.metadata->>'analysisVersion' = $3
+         AND j.status = 'FAILED'
+       ORDER BY j.finished_at DESC NULLS LAST, j.requested_at DESC, j.id DESC
+       LIMIT 1`,
+      [municipalityIbge, lotId, TERRAIN_ANALYSIS_VERSION],
+    );
+    if (failed.rows[0]) return this.mapRow(failed.rows[0]);
 
     return {
       municipalityIbge,
@@ -162,7 +214,7 @@ export class TerrainMaterializationService {
       status: 'UNREQUESTED',
       attemptCount: 0,
       maxAttempts: 3,
-      evidenceCount: Number(evidence.rows[0]?.count ?? 0),
+      evidenceCount: 0,
     };
   }
 
