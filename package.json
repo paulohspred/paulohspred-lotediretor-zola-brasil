@@ -112,7 +112,7 @@
     "loader.js": "^4.7.0",
     "mapbox-gl": "^1.0.0",
     "moment": "2.22.2",
-    "motion-ui": "^2.0.4",
+    "motion-ui": "^2.0.8",
     "pretender": "^3.4.7",
     "prettier": "^2.8.7",
     "qunit": "^2.19.4",
