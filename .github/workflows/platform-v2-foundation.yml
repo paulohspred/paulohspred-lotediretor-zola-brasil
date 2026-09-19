@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Validate contracts and compose
         run: |
           python3 -m json.tool platform-v2/data/schemas/source-registry.schema.json >/dev/null
