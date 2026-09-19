@@ -139,7 +139,7 @@
     "@turf/boolean-within": "^6.0.1",
     "ember-cli-dotenv": "^4.0.0",
     "ember-get-config": "1.1.0",
-    "express": "4.22.3",
+    "express": "5.2.1",
     "mustache": "3.0.1",
     "numeral": "^2.0.6"
   },
