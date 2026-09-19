@@ -40,6 +40,10 @@
           Escoamento e sub-bacias
         </label>
         <label>
+          <input type="checkbox" checked={{this.showAccess}} {{on "change" this.toggleAccess}} />
+          Greide e acesso preliminar
+        </label>
+        <label>
           Intervalo das curvas
           <select data-test-terrain-contour-interval {{on "change" this.changeContourInterval}}>
             <option value="0.5" selected={{eq this.contourInterval "0.5"}}>0,5 m</option>
@@ -48,6 +52,35 @@
             <option value="5" selected={{eq this.contourInterval "5"}}>5 m</option>
           </select>
         </label>
+      </div>
+    {{/if}}
+
+    {{#if this.accessSummary}}
+      <div class="callout secondary text-small" data-test-terrain-access>
+        <strong>Greide viário e acesso preliminar</strong>
+        {{#if this.accessSummary.available}}
+          <div>{{this.accessSummary.street}} · eixo–divisa {{this.accessSummary.centerlineDistanceM}} m</div>
+          <div>Divisa {{this.accessSummary.lotBoundaryElevationM}} m · eixo viário {{this.accessSummary.streetAxisElevationM}} m · lote {{this.accessSummary.relativePosition}}</div>
+          <div>Conexão reta preliminar {{this.accessSummary.straightGradePercent}}% · perfil viário {{this.accessSummary.profileLengthM}} m</div>
+          <div>Greide absoluto local: mediana {{this.accessSummary.medianGradePercent}}% · P95 {{this.accessSummary.p95GradePercent}}% · máximo {{this.accessSummary.maxGradePercent}}%</div>
+          <p>Triagem geométrica pelo MDT e eixo viário cadastral. Não representa cota levantada de guia/sarjeta, posição legal de acesso, projeto de rampa, calçada ou aprovação viária.</p>
+        {{else}}
+          <div>{{this.accessSummary.reason}}</div>
+        {{/if}}
+      </div>
+    {{/if}}
+
+    {{#if this.streetProfileDiagram}}
+      <div class="callout secondary" data-test-terrain-street-profile>
+        <strong>{{this.streetProfileDiagram.label}}</strong>
+        <div class="text-small">{{this.streetProfileDiagram.lengthM}} m · greide líquido geométrico {{this.streetProfileDiagram.netGradePercent}}%</div>
+        <svg viewBox="0 0 320 120" role="img" aria-label={{this.streetProfileDiagram.label}}>
+          <line x1="14" y1="106" x2="306" y2="106" stroke="currentColor" stroke-width="0.6"></line>
+          <line x1="14" y1="14" x2="14" y2="106" stroke="currentColor" stroke-width="0.6"></line>
+          <polyline points={{this.streetProfileDiagram.points}} fill="none" stroke="currentColor" stroke-width="2"></polyline>
+          <text x="18" y="24" font-size="9">{{this.streetProfileDiagram.maxElevationM}} m</text>
+          <text x="18" y="102" font-size="9">{{this.streetProfileDiagram.minElevationM}} m</text>
+        </svg>
       </div>
     {{/if}}
 

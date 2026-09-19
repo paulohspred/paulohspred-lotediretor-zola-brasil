@@ -234,6 +234,66 @@ class PlatformApiStub extends Service {
             ],
           },
         },
+        access: {
+          status: 'DISPONIVEL',
+          streetName: 'R JACQUES PILON',
+          streetNumber: '234',
+          selectedSegmentId: 142885,
+          selectionMethod: 'ADDRESS_RANGE_AND_PROXIMITY',
+          addressRangeMatched: true,
+          streetCenterlineDistanceM: 4.384,
+          lotBoundaryElevationM: 725.673,
+          streetAxisElevationM: 725.73,
+          lotAboveStreetM: -0.057,
+          straightConnectionGradePercent: 1.304,
+          candidateAccessPoint: {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [-46.7001, -23.4999] },
+            properties: { role: 'lot-boundary-access-candidate' },
+          },
+          streetAxisPoint: {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [-46.7002, -23.5001] },
+            properties: { role: 'street-axis-reference' },
+          },
+          accessConnector: {
+            type: 'Feature',
+            geometry: {
+              type: 'LineString',
+              coordinates: [
+                [-46.7002, -23.5001],
+                [-46.7001, -23.4999],
+              ],
+            },
+            properties: { role: 'straight-access-screening' },
+          },
+          streetProfile: {
+            spacingM: 1,
+            lengthM: 40,
+            elevationStartM: 726,
+            elevationEndM: 724.3,
+            netGradePercent: -4.25,
+            medianAbsoluteGradePercent: 3.85,
+            p95AbsoluteGradePercent: 8.03,
+            maxAbsoluteGradePercent: 9.6,
+            line: {
+              type: 'Feature',
+              geometry: {
+                type: 'LineString',
+                coordinates: [
+                  [-46.701, -23.501],
+                  [-46.699, -23.499],
+                ],
+              },
+              properties: { role: 'street-grade-profile', segmentId: 142885 },
+            },
+            samples: [
+              { distanceM: 0, elevationM: 726 },
+              { distanceM: 20, elevationM: 725.2 },
+              { distanceM: 40, elevationM: 724.3 },
+            ],
+          },
+        },
         profiles: {
           spacingM: 0.5,
           principal: {
@@ -322,6 +382,19 @@ module('Integration | Component | terrain-analysis-evidence', function (hooks) {
     assert.ok(map.getLayer('lotediretor-terrain-basins-fill'));
     assert.ok(map.getLayer('lotediretor-terrain-flow-paths-line'));
     assert.ok(map.getLayer('lotediretor-terrain-outlets-circle'));
+    assert
+      .dom('[data-test-terrain-access]')
+      .includesText('R JACQUES PILON, 234');
+    assert
+      .dom('[data-test-terrain-access]')
+      .includesText('eixo–divisa 4.384 m');
+    assert
+      .dom('[data-test-terrain-access]')
+      .includesText('0.057 m abaixo do eixo');
+    assert.dom('[data-test-terrain-street-profile]').exists();
+    assert.ok(map.getLayer('lotediretor-terrain-street-profile-line'));
+    assert.ok(map.getLayer('lotediretor-terrain-access-connector-line'));
+    assert.ok(map.getLayer('lotediretor-terrain-access-points-circle'));
     assert.dom('[data-test-terrain-profiles]').exists();
     assert.dom('[data-test-terrain-profile="principal"]').exists();
     assert.dom('[data-test-terrain-profile="transversal"]').exists();
@@ -372,6 +445,12 @@ module('Integration | Component | terrain-analysis-evidence', function (hooks) {
     assert.notOk(map.getSource('lotediretor-terrain-flow-paths'));
     assert.notOk(map.getLayer('lotediretor-terrain-outlets-circle'));
     assert.notOk(map.getSource('lotediretor-terrain-outlets'));
+    assert.notOk(map.getLayer('lotediretor-terrain-street-profile-line'));
+    assert.notOk(map.getSource('lotediretor-terrain-street-profile'));
+    assert.notOk(map.getLayer('lotediretor-terrain-access-connector-line'));
+    assert.notOk(map.getSource('lotediretor-terrain-access-connector'));
+    assert.notOk(map.getLayer('lotediretor-terrain-access-points-circle'));
+    assert.notOk(map.getSource('lotediretor-terrain-access-points'));
   });
 
   test('it does not queue terrain before base materialization succeeds', async function (assert) {

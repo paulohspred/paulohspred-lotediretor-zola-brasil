@@ -23,6 +23,12 @@ const FLOW_SOURCE_ID = 'lotediretor-terrain-flow-paths';
 const FLOW_LAYER_ID = 'lotediretor-terrain-flow-paths-line';
 const OUTLET_SOURCE_ID = 'lotediretor-terrain-outlets';
 const OUTLET_LAYER_ID = 'lotediretor-terrain-outlets-circle';
+const STREET_PROFILE_SOURCE_ID = 'lotediretor-terrain-street-profile';
+const STREET_PROFILE_LAYER_ID = 'lotediretor-terrain-street-profile-line';
+const ACCESS_CONNECTOR_SOURCE_ID = 'lotediretor-terrain-access-connector';
+const ACCESS_CONNECTOR_LAYER_ID = 'lotediretor-terrain-access-connector-line';
+const ACCESS_POINTS_SOURCE_ID = 'lotediretor-terrain-access-points';
+const ACCESS_POINTS_LAYER_ID = 'lotediretor-terrain-access-points-circle';
 
 const ORDER = [
   'SP_LOT_TERRAIN_ELEVATION_MIN',
@@ -111,6 +117,8 @@ export default class TerrainAnalysisEvidenceComponent extends Component {
 
   @tracked showHydrology = true;
 
+  @tracked showAccess = true;
+
   @tracked cursorSample = null;
 
   requestVersion = 0;
@@ -168,6 +176,62 @@ export default class TerrainAnalysisEvidenceComponent extends Component {
         hydrology.depressionScreening?.estimatedFillVolumeM3 || 0
       ).toFixed(3),
     };
+  }
+
+  get accessSummary() {
+    const access = this.terrainProduct?.surface?.access;
+    if (!access) return null;
+    if (access.status !== 'DISPONIVEL') {
+      return {
+        available: false,
+        reason: access.reason || 'Análise de acesso indisponível.',
+      };
+    }
+    const delta = Number(access.lotAboveStreetM);
+    const absoluteDelta = Math.abs(delta);
+    let relativePosition = 'na mesma cota aproximada do eixo';
+    if (absoluteDelta >= 0.005) {
+      relativePosition =
+        delta > 0
+          ? `${absoluteDelta.toFixed(3)} m acima do eixo`
+          : `${absoluteDelta.toFixed(3)} m abaixo do eixo`;
+    }
+    return {
+      available: true,
+      street: [access.streetName, access.streetNumber]
+        .filter(Boolean)
+        .join(', '),
+      selectionMethod: access.selectionMethod,
+      addressRangeMatched: access.addressRangeMatched,
+      centerlineDistanceM: Number(access.streetCenterlineDistanceM).toFixed(3),
+      lotBoundaryElevationM: Number(access.lotBoundaryElevationM).toFixed(3),
+      streetAxisElevationM: Number(access.streetAxisElevationM).toFixed(3),
+      elevationDifferenceM: delta.toFixed(3),
+      relativePosition,
+      straightGradePercent: Number(
+        access.straightConnectionGradePercent
+      ).toFixed(2),
+      profileLengthM: Number(access.streetProfile?.lengthM || 0).toFixed(2),
+      medianGradePercent: Number(
+        access.streetProfile?.medianAbsoluteGradePercent || 0
+      ).toFixed(2),
+      p95GradePercent: Number(
+        access.streetProfile?.p95AbsoluteGradePercent || 0
+      ).toFixed(2),
+      maxGradePercent: Number(
+        access.streetProfile?.maxAbsoluteGradePercent || 0
+      ).toFixed(2),
+    };
+  }
+
+  get streetProfileDiagram() {
+    const profile = this.terrainProduct?.surface?.access?.streetProfile;
+    if (!profile) return null;
+    return this.buildProfileDiagram({
+      ...profile,
+      id: 'street',
+      label: 'Perfil viário local',
+    });
   }
 
   get profileDiagrams() {
@@ -265,6 +329,9 @@ export default class TerrainAnalysisEvidenceComponent extends Component {
       map.off('mouseleave', TIN_LAYER_ID, this.onTerrainMouseLeave);
     }
     this.cursorSample = null;
+    removeLayer(map, ACCESS_POINTS_LAYER_ID);
+    removeLayer(map, ACCESS_CONNECTOR_LAYER_ID);
+    removeLayer(map, STREET_PROFILE_LAYER_ID);
     removeLayer(map, OUTLET_LAYER_ID);
     removeLayer(map, FLOW_LAYER_ID);
     removeLayer(map, DIVIDE_LAYER_ID);
@@ -274,6 +341,9 @@ export default class TerrainAnalysisEvidenceComponent extends Component {
     removeLayer(map, CONTOUR_LAYER_ID);
     removeLayer(map, TIN_OUTLINE_LAYER_ID);
     removeLayer(map, TIN_LAYER_ID);
+    removeSource(map, ACCESS_POINTS_SOURCE_ID);
+    removeSource(map, ACCESS_CONNECTOR_SOURCE_ID);
+    removeSource(map, STREET_PROFILE_SOURCE_ID);
     removeSource(map, OUTLET_SOURCE_ID);
     removeSource(map, FLOW_SOURCE_ID);
     removeSource(map, DIVIDE_SOURCE_ID);
@@ -438,6 +508,65 @@ export default class TerrainAnalysisEvidenceComponent extends Component {
           paint: {
             'circle-radius': 5,
             'circle-color': '#01579b',
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-width': 1.5,
+          },
+        });
+      }
+    }
+
+    const { access } = product.surface;
+    if (this.showAccess && access?.status === 'DISPONIVEL') {
+      if (access.streetProfile?.line) {
+        map.addSource(STREET_PROFILE_SOURCE_ID, {
+          type: 'geojson',
+          data: access.streetProfile.line,
+        });
+        map.addLayer({
+          id: STREET_PROFILE_LAYER_ID,
+          type: 'line',
+          source: STREET_PROFILE_SOURCE_ID,
+          paint: { 'line-color': '#212121', 'line-width': 3 },
+        });
+      }
+      if (access.accessConnector) {
+        map.addSource(ACCESS_CONNECTOR_SOURCE_ID, {
+          type: 'geojson',
+          data: access.accessConnector,
+        });
+        map.addLayer({
+          id: ACCESS_CONNECTOR_LAYER_ID,
+          type: 'line',
+          source: ACCESS_CONNECTOR_SOURCE_ID,
+          paint: {
+            'line-color': '#ef6c00',
+            'line-width': 2.5,
+            'line-dasharray': [2, 1],
+          },
+        });
+      }
+      const points = [
+        access.candidateAccessPoint,
+        access.streetAxisPoint,
+      ].filter(Boolean);
+      if (points.length) {
+        map.addSource(ACCESS_POINTS_SOURCE_ID, {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: points },
+        });
+        map.addLayer({
+          id: ACCESS_POINTS_LAYER_ID,
+          type: 'circle',
+          source: ACCESS_POINTS_SOURCE_ID,
+          paint: {
+            'circle-radius': 5,
+            'circle-color': [
+              'match',
+              ['get', 'role'],
+              'lot-boundary-access-candidate',
+              '#ef6c00',
+              '#212121',
+            ],
             'circle-stroke-color': '#ffffff',
             'circle-stroke-width': 1.5,
           },
@@ -612,6 +741,11 @@ export default class TerrainAnalysisEvidenceComponent extends Component {
 
   @action toggleHydrology(event) {
     this.showHydrology = event.target.checked;
+    this.renderMapOverlay();
+  }
+
+  @action toggleAccess(event) {
+    this.showAccess = event.target.checked;
     this.renderMapOverlay();
   }
 
