@@ -10,7 +10,7 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 
 | Etapa | Blueprint | Estado atual | Próximo gate |
 |---|---|---|---|
-| 0 | Fundação | **PARCIAL / RUNTIME + PLATFORM API PROVADOS** | Auth/realm Keycloak, tenant context, app shells e promoção para staging |
+| 0 | Fundação | **PARCIAL / RUNTIME + PLATFORM API + BACKUP/HEALTH PROVADOS** | rotacionar segredos, TLS/domínio, backup off-site, proteção de branch, Auth/realm Keycloak, tenant context e staging |
 | 1 | Core territorial | **PARCIAL / SP FORTE + SNAPSHOT INGEST + EVIDENCE POR SUJEITO** | ampliar evidências territoriais por imóvel, IBGE nacional, Parcel Resolver genérico, MVT temático e relatório v1 por API |
 | 2 | UX cliente | **PARCIAL / ZOLA MODULAR SHELL + PROVENIÊNCIA** | expandir integração dos módulos com o novo core preservando mapa, busca, camadas e fluxos existentes |
 | 3 | Plano Diretor / Terreno | **PARCIAL / MDT + TIN/GRADE + DECLIVIDADE + CURVAS + PERFIS + DRENAGEM + ACESSO/GREIDE** | adicionar platôs, corte/aterro, balanço de massas, envelope e demais análises de engenharia |
@@ -56,6 +56,8 @@ O ZoLa Brasil atual permanece como aplicação operacional/cidade laboratório e
 - O produto `terrain-surface-v4` inclui perfil principal e transversal automáticos, diagramas cota × distância, linhas de perfil no mapa e cálculo de cota sob o cursor a partir do plano interpolado de cada célula TIN.
 - A v4 também adiciona drenagem preliminar do relevo: direção preferencial, sub-bacias internas, divisores aproximados, linhas de escoamento, saídas e triagem de depressões. Esses resultados são screening topográfico e não substituem projeto hidrológico/hidráulico.
 - O produto `terrain-surface-v5` adiciona um snapshot viário independente, perfil de greide local e análise preliminar do acesso eixo–divisa baseada em endereço cadastral confirmado + faixa de numeração + proximidade. A saída não equivale a levantamento de guia/sarjeta, definição jurídica de frente, projeto ou aprovação de acesso.
+- A fundação operacional ganhou backup diário verificado de PostgreSQL/MinIO, health periódico de fontes com política de staleness e gate local para disco/jobs/web/API; esses mecanismos ainda precisam de destino off-site e canal externo de alerta para produção pública.
+- O Source Registry não recebe mais estado `healthy` artificialmente pelo seed: a saúde é resultado de probe real quando tecnicamente seguro, e conectores parametrizados/POST podem permanecer `manual`.
 - Object storage imutável para artefatos brutos e relatórios.
 - Valkey para cache/locks; NATS JetStream para eventos; OpenSearch para busca documental.
 - Martin MVT sobre views seguras.

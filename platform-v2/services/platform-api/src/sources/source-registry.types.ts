@@ -66,6 +66,22 @@ export class SourceRegistryEntry {
   @ApiPropertyOptional({ format: 'date-time' })
   lastCheckedAt?: string;
 
+  @Field({ nullable: true })
+  @ApiPropertyOptional({ format: 'date-time' })
+  lastSuccessAt?: string;
+
+  @Field({ nullable: true })
+  @ApiPropertyOptional({ example: 691200 })
+  staleAfterSeconds?: number;
+
+  @Field()
+  @ApiProperty({ example: false })
+  isStale!: boolean;
+
+  @Field({ nullable: true })
+  @ApiPropertyOptional({ example: 'HTTP 503' })
+  healthError?: string;
+
   @Field(() => [SourceEndpoint])
   @ApiProperty({ type: () => [SourceEndpoint] })
   endpoints!: SourceEndpoint[];

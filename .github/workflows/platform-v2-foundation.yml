@@ -19,7 +19,7 @@ jobs:
         run: |
           python3 -m json.tool platform-v2/data/schemas/source-registry.schema.json >/dev/null
           docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example \
-            --profile migrate --profile bootstrap --profile ingest --profile identity --profile search --profile observability --profile edge config >/dev/null
+            --profile migrate --profile bootstrap --profile ingest --profile identity --profile search --profile observability --profile edge --profile health config >/dev/null
       - name: Start data foundation
         run: |
           docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example up -d postgres valkey nats minio

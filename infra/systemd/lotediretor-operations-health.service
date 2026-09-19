@@ -1,0 +1,13 @@
+[Unit]
+Description=LoteDiretor operational health gate
+After=docker.service lotediretor-web.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/srv/lotediretor-zola-brasil
+ExecStart=/srv/lotediretor-zola-brasil/scripts/check-platform-operations.sh
+PrivateTmp=true
+ProtectHome=true

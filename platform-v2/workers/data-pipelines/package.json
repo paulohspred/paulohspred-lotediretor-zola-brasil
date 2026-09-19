@@ -15,7 +15,8 @@
     "snapshot:ingest-geosampa-territorial": "tsx src/ingest-geosampa-territorial-snapshot.ts",
     "snapshot:parse-geosampa-territorial": "tsx src/parse-geosampa-territorial-snapshot.ts",
     "worker:materialization": "node dist/materialization-worker.js",
-    "worker:terrain-materialization": "node dist/terrain-materialization-worker.js"
+    "worker:terrain-materialization": "node dist/terrain-materialization-worker.js",
+    "source:health": "node dist/check-source-health.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.888.0",

@@ -41,11 +41,20 @@ Concluído:
 - serviço lotediretor-web.service supervisionado por systemd;
 - health endpoint com commit executado;
 - smoke de produção incorporado ao CI;
-- script de deploy reproduzível.
+- deploy reproduzível de web + Platform v2;
+- runtime web validado em Node.js 22 LTS;
+- backup diário versionado operacional de PostgreSQL + MinIO com checksum;
+- volume raiz dimensionado com margem operacional e política de health para uso de disco;
+- firewall local com entrada negada por padrão e exposição restrita à rede privada;
+- Dependabot e CodeQL versionados.
 
 Pendente:
 - mapa-base white-label/licenciado sem dependência de créditos de terceiros na experiência principal;
-- TLS/domínio definitivo e rotação dos segredos default antes de classificar o ambiente como produção pública.
+- TLS/domínio definitivo;
+- rotação coordenada das credenciais históricas do Data Plane;
+- SSH exclusivamente por chave após instalação/validação da chave do operador;
+- backup off-site/snapshot do provedor com restore rehearsal completo;
+- proteção de `main` com required checks antes de classificar o ambiente como produção pública.
 
 ## Fase 1 — Plano Diretor operacional por qualquer terreno
 
@@ -72,9 +81,15 @@ Pendente:
 - imóvel ativo persistido em URL compartilhável (`/plano-diretor?imovel=<id>`) e restaurado em sessão nova;
 - contratos OpenAPI, smoke da fila, teste de integração Ember e teste end-to-end em bundle de produção.
 
+**Implementado no fechamento operacional da fase:**
+- política explícita de `stale_after` por fonte, com `last_checked_at`, `last_success_at`, estado e erro de health separados do seed cadastral;
+- probes reais somente para endpoints GET seguros; conectores parametrizados/POST permanecem `manual` em vez de gerar falso health;
+- gate operacional periódico para web/API, uso de disco, jobs presos e fontes quebradas;
+- smoke da fila com identificador sintético único e limpeza do próprio job, sem acumular registros de teste no banco operacional.
+
 **Pendente para encerrar todo o escopo desta fase:**
-- política explícita de validade/staleness por tipo de fonte/análise;
-- métricas/alertas operacionais específicos da fila além dos logs e health já existentes.
+- canal externo de alerta/paging para as falhas detectadas pelos timers;
+- política de validade também no nível de análise/evidência, quando diferente da validade da fonte.
 
 
 ## Fase 2 — terreno, topografia e engenharia

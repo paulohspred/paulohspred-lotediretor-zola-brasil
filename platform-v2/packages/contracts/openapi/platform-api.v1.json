@@ -372,6 +372,10 @@
             },
             "type": "array"
           },
+          "healthError": {
+            "example": "HTTP 503",
+            "type": "string"
+          },
           "id": {
             "format": "uuid",
             "type": "string"
@@ -386,7 +390,15 @@
             ],
             "type": "string"
           },
+          "isStale": {
+            "example": false,
+            "type": "boolean"
+          },
           "lastCheckedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lastSuccessAt": {
             "format": "date-time",
             "type": "string"
           },
@@ -409,6 +421,10 @@
           "sourceType": {
             "example": "WFS",
             "type": "string"
+          },
+          "staleAfterSeconds": {
+            "example": 691200,
+            "type": "number"
           }
         },
         "required": [
@@ -419,6 +435,7 @@
           "datasetCode",
           "accessClass",
           "ingestionStatus",
+          "isStale",
           "endpoints"
         ],
         "type": "object"

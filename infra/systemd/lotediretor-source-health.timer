@@ -1,0 +1,11 @@
+[Unit]
+Description=Periodic LoteDiretor source health checks
+
+[Timer]
+OnCalendar=*-*-* 0/6:15:00
+Persistent=true
+RandomizedDelaySec=10m
+Unit=lotediretor-source-health.service
+
+[Install]
+WantedBy=timers.target

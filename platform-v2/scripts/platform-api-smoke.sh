@@ -29,6 +29,9 @@ assert all(r['municipalityIbge']=='3550308' for r in rows)
 assert any(r['sourceCode']=='PMSP_GEOSAMPA_LOTES' for r in rows)
 assert any(r['sourceCode']=='PMSP_TERRITORIO_TOPOGRAFIA' for r in rows)
 assert any(r['sourceCode']=='PMSP_SISTEMA_VIARIO' for r in rows)
+assert all(r['ingestionStatus'] in {'healthy','degraded','broken','manual','disabled'} for r in rows), rows
+assert all(isinstance(r['isStale'], bool) for r in rows), rows
+assert all(isinstance(r['staleAfterSeconds'], int) and r['staleAfterSeconds'] > 0 for r in rows), rows
 PY
 
 curl -fsS 'http://127.0.0.1:54000/api/v1/sources/PMSP_TERRITORIO_TOPOGRAFIA?municipalityIbge=3550308' >/tmp/ld-api-topography-source.json

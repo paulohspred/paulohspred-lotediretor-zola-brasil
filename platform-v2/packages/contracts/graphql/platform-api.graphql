@@ -92,14 +92,18 @@ type SourceRegistryEntry {
   cadence: String
   datasetCode: String!
   endpoints: [SourceEndpoint!]!
+  healthError: String
   id: ID!
   ingestionStatus: String!
+  isStale: Boolean!
   lastCheckedAt: String
+  lastSuccessAt: String
   municipalityIbge: String
   municipalityName: String
   parserVersion: String
   sourceCode: String!
   sourceType: String!
+  staleAfterSeconds: Float
 }
 
 type SourceSnapshotRecord {

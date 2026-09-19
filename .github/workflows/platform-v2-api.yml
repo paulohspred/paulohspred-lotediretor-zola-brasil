@@ -34,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate compose
-        run: docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example --profile migrate --profile edge config >/dev/null
+        run: docker compose -f platform-v2/infra/docker/compose.yaml --env-file platform-v2/.env.example --profile migrate --profile edge --profile health config >/dev/null
       - name: Platform API smoke
         run: sudo ./platform-v2/scripts/platform-api-smoke.sh
       - name: Verify materialization queue API

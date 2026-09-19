@@ -15,6 +15,10 @@ type SourceRow = {
   cadence: string | null;
   ingestion_status: string;
   last_checked_at: Date | null;
+  last_success_at: Date | null;
+  stale_after_seconds: number | null;
+  is_stale: boolean;
+  health_error: string | null;
   endpoints: Array<{ type: string; url: string; method: string }> | null;
 };
 
@@ -32,6 +36,14 @@ SELECT
   sr.cadence,
   sr.ingestion_status,
   sr.last_checked_at,
+  sr.last_success_at,
+  EXTRACT(EPOCH FROM sr.stale_after)::integer AS stale_after_seconds,
+  CASE
+    WHEN sr.stale_after IS NULL THEN false
+    WHEN sr.last_success_at IS NULL THEN true
+    ELSE now() - sr.last_success_at > sr.stale_after
+  END AS is_stale,
+  sr.health_error,
   COALESCE(
     jsonb_agg(
       jsonb_build_object(
@@ -94,6 +106,10 @@ export class SourceRegistryService {
       cadence: row.cadence ?? undefined,
       ingestionStatus: row.ingestion_status,
       lastCheckedAt: row.last_checked_at?.toISOString(),
+      lastSuccessAt: row.last_success_at?.toISOString(),
+      staleAfterSeconds: row.stale_after_seconds ?? undefined,
+      isStale: row.is_stale,
+      healthError: row.health_error ?? undefined,
       endpoints: (row.endpoints ?? []).map(
         (endpoint): SourceEndpoint => ({
           type: endpoint.type,

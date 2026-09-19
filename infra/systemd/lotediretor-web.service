@@ -12,8 +12,8 @@ Environment=NODE_ENV=production
 Environment=HOST=0.0.0.0
 Environment=PORT=4200
 Environment=PLATFORM_API_URL=http://127.0.0.1:54000
-Environment=PATH=/srv/lotediretor-runtime/node-v18.16.0-linux-x64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=/srv/lotediretor-runtime/node-v18.16.0-linux-x64/bin/node /srv/lotediretor-zola-brasil/server/production.js
+Environment=PATH=/srv/lotediretor-runtime/node-v22.23.2-linux-x64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/srv/lotediretor-runtime/node-v22.23.2-linux-x64/bin/node /srv/lotediretor-zola-brasil/server/production.js
 Restart=always
 RestartSec=3
 TimeoutStopSec=15

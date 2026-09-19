@@ -101,6 +101,22 @@ services:
     networks: [foundation]
 
 
+  source-health:
+    build:
+      context: ../..
+      dockerfile: workers/data-pipelines/Dockerfile
+    image: lotediretor/data-pipelines:dev
+    profiles: ["health"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      SOURCE_HEALTH_TIMEOUT_MS: 10000
+    entrypoint: ["node", "workers/data-pipelines/dist/check-source-health.js"]
+    networks: [foundation]
+
+
   materialization-worker:
     build:
       context: ../..
@@ -193,7 +209,7 @@ services:
       minio:
         condition: service_started
     environment:
-      NODE_ENV: development
+      NODE_ENV: ${PLATFORM_API_NODE_ENV:-development}
       PORT: 3000
       HOST: 0.0.0.0
       DATABASE_URL: postgres://${POSTGRES_USER:-lotediretor}:${POSTGRES_PASSWORD:-change-me-platform-db}@postgres:5432/${POSTGRES_DB:-lotediretor_platform}

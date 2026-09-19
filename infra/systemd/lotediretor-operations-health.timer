@@ -1,0 +1,11 @@
+[Unit]
+Description=Periodic LoteDiretor operational health gate
+
+[Timer]
+OnBootSec=5m
+OnUnitActiveSec=10m
+Persistent=true
+Unit=lotediretor-operations-health.service
+
+[Install]
+WantedBy=timers.target
