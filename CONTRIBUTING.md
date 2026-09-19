@@ -1,33 +1,43 @@
-## 🎉 Welcome!
+# Contributing to LoteDiretor Brasil
 
-We're so glad you're thinking about contributing to a Planning Labs open source project! If you're unsure about anything, just ask — or submit the issue or pull request anyway. The worst that can happen is you'll be politely asked to change something. We love all friendly contributions.
+## Workflow
 
-We encourage you to read this project's CONTRIBUTING policy (you are here), its [LICENSE](LICENSE.md), and its [README](README.md).
+- `main` is the deployable integration branch.
+- Create a short-lived feature/fix branch from the latest `main`.
+- Keep commits focused and do not force-push `main`.
+- Open a pull request for changes that affect production behavior, data contracts, infrastructure or migrations.
+- Required checks must be green before merge.
 
-If you have any questions or want to read more, check out the [NYC Planning Labs Open Source Policy GitHub repository](https://github.com/NYCPlanning/labs-open-source-policy), or just [shoot us an email](mailto:labs_dl@planning.nyc.gov).
+## Local checks
 
-## 🛠 Create a branch
+Frontend:
 
-This repository has two evergreen branches: `master` and `develop`
- (avoid directly committing changes to these two branches).
+```bash
+yarn install --frozen-lockfile --ignore-engines
+yarn lint
+yarn test
+yarn build
+scripts/web-production-smoke.sh
+```
 
-| Branch | Notes |
-| ------ | ----- |
-| `master` | Master is always deployable and only accepts merges from `develop`. |
-| `develop` | Accepts merges from feature and issue branches. |
-| Feature/Issues | Always branch off `HEAD` of `develop`. Prefix feature branches with your name (e.g. `user-feature_name`). Prefix issue branches with the issue number (e.g. `123-issue_name`). |
-| Hotfixes | In rare cases, hotfix branches must be created to quickly update the project. Always branch off `master` and make sure those changes make it back into develop. |
+Platform v2:
 
-## 🤓 Be cool
+```bash
+sudo ./platform-v2/scripts/foundation-smoke.sh
+sudo ./platform-v2/scripts/platform-api-smoke.sh
+sudo ./platform-v2/scripts/materialization-api-smoke.sh
+```
 
-We want to ensure a welcoming environment for all of our projects. Planning Labs follows the [18F Code of Conduct](https://github.com/18F/code-of-conduct/blob/master/code-of-conduct.md) and all contributors should do the same.
+Changes to API contracts must also regenerate the versioned OpenAPI/GraphQL artifacts and leave no unexpected diff.
 
-## 🤝 Public domain
+## Data and evidence rules
 
-This project is in the public domain within the United States, and
-copyright and related rights in the work worldwide are waived through
-the [CC0 1.0 Universal public domain dedication](https://creativecommons.org/publicdomain/zero/1.0/).
+Derived technical conclusions must preserve source snapshot, citation and provenance. Do not turn geometric overlap or MDT-derived screening into a legal, surveying or engineering approval conclusion.
 
-All contributions to this project will be released under the CC0
-dedication. By submitting a pull request, you are agreeing to comply
-with this waiver of copyright interest.
+Never commit credentials or a populated `platform-v2/.env`.
+
+## Production changes
+
+Use the versioned deployment scripts and systemd services. Do not run a second web process with `nohup`, `zola.pid` or ad-hoc port ownership.
+
+Create a verified backup before migrations, credential rotation or destructive maintenance.

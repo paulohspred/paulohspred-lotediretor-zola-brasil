@@ -36,3 +36,5 @@ development.env
 
 # broccoli-debug
 /DEBUG/
+/zola.log
+/zola.pid

@@ -2,9 +2,9 @@
   "name": "labs-zola",
   "version": "0.0.0",
   "private": true,
-  "description": "Small description for labs-zola goes here",
-  "repository": "",
-  "license": "MIT",
+  "description": "LoteDiretor Brasil territorial and urban-engineering decision platform",
+  "repository": "git+https://github.com/paulohspred/paulohspred-lotediretor-zola-brasil.git",
+  "license": "CC0-1.0",
   "author": "",
   "directories": {
     "doc": "doc",
@@ -128,7 +128,7 @@
     "what-input": "^5.2.10"
   },
   "engines": {
-    "node": "14.* || 16.* || >= 18"
+    "node": ">=22.0.0 <25"
   },
   "ember": {
     "edition": "octane"
@@ -139,7 +139,7 @@
     "@turf/boolean-within": "^6.0.1",
     "ember-cli-dotenv": "^4.0.0",
     "ember-get-config": "1.1.0",
-    "express": "4.18.2",
+    "express": "4.22.3",
     "mustache": "3.0.1",
     "numeral": "^2.0.6"
   },
@@ -147,7 +147,12 @@
     "ember-auto-import": "^2.6.3",
     "ember-cli-sass": "^11.0.1",
     "babel-eslint/@babel/parser": "7.7.5",
-    "ember-cli-typescript": "5.2.1"
+    "ember-cli-typescript": "5.2.1",
+    "@babel/traverse": "7.29.8",
+    "@babel/plugin-transform-modules-systemjs": "7.29.8",
+    "browserslist": "4.29.0",
+    "lodash": "4.18.1",
+    "tmp": "0.2.7"
   },
   "lint-staged": {
     "*.js": "eslint --cache --fix"
