@@ -3,6 +3,7 @@ import argparse
 from heapq import heappop, heappush
 import json
 import math
+import re
 import tempfile
 from pathlib import Path
 from zipfile import ZipFile
@@ -14,12 +15,16 @@ from scipy.interpolate import LinearNDInterpolator
 from scipy.spatial import Delaunay
 from shapely import contains_xy
 from shapely.geometry import LineString, Point, Polygon, box, mapping, shape
-from shapely.ops import transform, unary_union
+from shapely.ops import nearest_points, transform, unary_union
 
 EXPECTED_EPSG = 31983
-ANALYSIS_VERSION = "terrain-mdt-2020-surface-v4"
+ANALYSIS_VERSION = "terrain-mdt-2020-surface-v5"
 GRID_RESOLUTION_M = 1.0
 CONTEXT_BUFFER_M = 8.0
+ANALYSIS_CONTEXT_BUFFER_M = 40.0
+STREET_PROFILE_HALF_LENGTH_M = 20.0
+STREET_PROFILE_SPACING_M = 1.0
+MAX_STREET_CENTERLINE_DISTANCE_M = 35.0
 CONTOUR_INTERVALS_M = (0.5, 1.0, 2.0, 5.0)
 PROFILE_SPACING_M = 0.5
 HYDROLOGY_EPSILON_M = 0.0001
@@ -35,6 +40,9 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--lot-geometry-json", required=True)
     parser.add_argument("--zip", action="append", dest="zip_specs", default=[])
+    parser.add_argument("--street-candidates-json")
+    parser.add_argument("--street-name")
+    parser.add_argument("--street-number")
     return parser.parse_args()
 
 
@@ -959,6 +967,272 @@ def build_hydrology(context_points, lot_projected, context_polygon, to_wgs84):
 
 
 
+
+def _number(value):
+    if value is None:
+        return None
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        digits = ''.join(ch for ch in str(value) if ch.isdigit())
+        return int(digits) if digits else None
+
+
+def _address_range_matches(properties, street_number):
+    number = _number(street_number)
+    if number is None:
+        return False
+    if number % 2 == 0:
+        low = _number(properties.get('cd_numero_inicial_par'))
+        high = _number(properties.get('cd_numero_final_par'))
+    else:
+        low = _number(properties.get('cd_numero_inicial_impar'))
+        high = _number(properties.get('cd_numero_final_impar'))
+    if low is None or high is None:
+        return False
+    minimum = min(low, high)
+    maximum = max(low, high)
+    return minimum <= number <= maximum
+
+
+def _sample_interpolator(interpolator, x, y):
+    value = interpolator(float(x), float(y))
+    result = float(np.asarray(value).reshape(-1)[0])
+    return result if np.isfinite(result) else None
+
+
+def _unavailable_access(street_name, street_number, reason):
+    return {
+        'status': 'NAO_DISPONIVEL',
+        'streetName': street_name,
+        'streetNumber': street_number,
+        'reason': reason,
+        'method': (
+            'Street-access screening requires a matching cadastral street segment and '
+            'interpolable MDT coverage around the lot; unavailable results do not affect '
+            'the remaining terrain product.'
+        ),
+    }
+
+
+def build_access_analysis(
+    lot_projected,
+    context_points,
+    to_projected,
+    to_wgs84,
+    street_candidates,
+    street_name,
+    street_number,
+):
+    if not street_name:
+        return _unavailable_access(None, street_number, 'Lot has no confirmed street name')
+    features = (street_candidates or {}).get('features') or []
+    if not features:
+        return _unavailable_access(
+            street_name, street_number, 'No matching cadastral street segment was returned'
+        )
+
+    candidates = []
+    for feature in features:
+        geometry = feature.get('geometry')
+        if not geometry:
+            continue
+        try:
+            projected_geometry = transform(to_projected.transform, shape(geometry))
+        except Exception:
+            continue
+        properties = feature.get('properties') or {}
+        for part in line_parts(projected_geometry):
+            distance = float(lot_projected.distance(part))
+            candidates.append(
+                {
+                    'feature': feature,
+                    'properties': properties,
+                    'line': part,
+                    'distanceM': distance,
+                    'addressRangeMatched': _address_range_matches(
+                        properties, street_number
+                    ),
+                }
+            )
+
+    if not candidates:
+        return _unavailable_access(
+            street_name, street_number, 'Matching street features contain no usable line geometry'
+        )
+
+    candidates.sort(
+        key=lambda item: (
+            0 if item['addressRangeMatched'] else 1,
+            item['distanceM'],
+            str(item['properties'].get('cd_identificador') or ''),
+        )
+    )
+    selected = candidates[0]
+    if selected['distanceM'] > MAX_STREET_CENTERLINE_DISTANCE_M:
+        return _unavailable_access(
+            street_name,
+            street_number,
+            f"Nearest matching street axis is {selected['distanceM']:.2f} m from the lot",
+        )
+
+    line = selected['line']
+    lot_point, axis_point = nearest_points(lot_projected.boundary, line)
+    axis_distance = float(line.project(axis_point))
+    profile_start = max(0.0, axis_distance - STREET_PROFILE_HALF_LENGTH_M)
+    profile_end = min(float(line.length), axis_distance + STREET_PROFILE_HALF_LENGTH_M)
+    if profile_end - profile_start < 2.0:
+        return _unavailable_access(
+            street_name, street_number, 'Selected street segment is too short for a local grade profile'
+        )
+
+    triangulation = Delaunay(context_points[:, :2])
+    interpolator = LinearNDInterpolator(
+        triangulation, context_points[:, 2], fill_value=np.nan
+    )
+    lot_elevation = _sample_interpolator(interpolator, lot_point.x, lot_point.y)
+    street_elevation = _sample_interpolator(interpolator, axis_point.x, axis_point.y)
+    if lot_elevation is None or street_elevation is None:
+        return _unavailable_access(
+            street_name,
+            street_number,
+            'MDT interpolation does not cover both the lot boundary and street axis points',
+        )
+
+    sample_positions = list(
+        np.arange(profile_start, profile_end, STREET_PROFILE_SPACING_M)
+    )
+    if not sample_positions or not math.isclose(
+        sample_positions[-1], profile_end, abs_tol=1e-6
+    ):
+        sample_positions.append(profile_end)
+
+    profile_samples = []
+    profile_coordinates = []
+    for position in sample_positions:
+        point = line.interpolate(float(position))
+        elevation = _sample_interpolator(interpolator, point.x, point.y)
+        if elevation is None:
+            continue
+        lon, lat = to_wgs84.transform(float(point.x), float(point.y))
+        profile_samples.append(
+            {
+                'distanceM': round(float(position - profile_start), 3),
+                'elevationM': round(float(elevation), 3),
+                'longitude': round(float(lon), 9),
+                'latitude': round(float(lat), 9),
+            }
+        )
+        profile_coordinates.append([float(lon), float(lat)])
+
+    if len(profile_samples) < 3:
+        return _unavailable_access(
+            street_name, street_number, 'Insufficient MDT samples for the local street profile'
+        )
+
+    local_grades = []
+    for left, right in zip(profile_samples, profile_samples[1:]):
+        distance = float(right['distanceM']) - float(left['distanceM'])
+        if distance <= 0:
+            continue
+        elevation_delta = float(right['elevationM']) - float(left['elevationM'])
+        local_grades.append(abs(elevation_delta / distance * 100.0))
+    grade_values = np.asarray(local_grades, dtype=np.float64)
+    profile_length = float(
+        profile_samples[-1]['distanceM'] - profile_samples[0]['distanceM']
+    )
+    profile_delta = float(
+        profile_samples[-1]['elevationM'] - profile_samples[0]['elevationM']
+    )
+
+    lot_lon, lot_lat = to_wgs84.transform(float(lot_point.x), float(lot_point.y))
+    axis_lon, axis_lat = to_wgs84.transform(float(axis_point.x), float(axis_point.y))
+    connector_distance = float(lot_point.distance(axis_point))
+    elevation_difference = float(lot_elevation - street_elevation)
+    straight_grade = (
+        abs(elevation_difference) / connector_distance * 100.0
+        if connector_distance > 1e-6
+        else 0.0
+    )
+    properties = selected['properties']
+    segment_id = properties.get('cd_identificador')
+    selection_method = (
+        'ADDRESS_RANGE_AND_PROXIMITY'
+        if selected['addressRangeMatched']
+        else 'STREET_NAME_AND_PROXIMITY'
+    )
+
+    return {
+        'status': 'DISPONIVEL',
+        'streetName': street_name,
+        'streetNumber': street_number,
+        'selectedSegmentId': segment_id,
+        'selectionMethod': selection_method,
+        'addressRangeMatched': bool(selected['addressRangeMatched']),
+        'streetCenterlineDistanceM': connector_distance,
+        'lotBoundaryElevationM': float(lot_elevation),
+        'streetAxisElevationM': float(street_elevation),
+        'lotAboveStreetM': elevation_difference,
+        'straightConnectionGradePercent': straight_grade,
+        'candidateAccessPoint': {
+            'type': 'Feature',
+            'geometry': {
+                'type': 'Point',
+                'coordinates': [float(lot_lon), float(lot_lat)],
+            },
+            'properties': {'role': 'lot-boundary-access-candidate'},
+        },
+        'streetAxisPoint': {
+            'type': 'Feature',
+            'geometry': {
+                'type': 'Point',
+                'coordinates': [float(axis_lon), float(axis_lat)],
+            },
+            'properties': {'role': 'street-axis-reference'},
+        },
+        'accessConnector': {
+            'type': 'Feature',
+            'geometry': {
+                'type': 'LineString',
+                'coordinates': [
+                    [float(axis_lon), float(axis_lat)],
+                    [float(lot_lon), float(lot_lat)],
+                ],
+            },
+            'properties': {'role': 'straight-access-screening'},
+        },
+        'streetProfile': {
+            'spacingM': STREET_PROFILE_SPACING_M,
+            'lengthM': profile_length,
+            'elevationStartM': float(profile_samples[0]['elevationM']),
+            'elevationEndM': float(profile_samples[-1]['elevationM']),
+            'netGradePercent': (profile_delta / profile_length * 100.0) if profile_length > 0 else 0.0,
+            'medianAbsoluteGradePercent': float(np.median(grade_values)) if grade_values.size else 0.0,
+            'p95AbsoluteGradePercent': float(np.percentile(grade_values, 95)) if grade_values.size else 0.0,
+            'maxAbsoluteGradePercent': float(np.max(grade_values)) if grade_values.size else 0.0,
+            'line': {
+                'type': 'Feature',
+                'geometry': {
+                    'type': 'LineString',
+                    'coordinates': profile_coordinates,
+                },
+                'properties': {
+                    'role': 'street-grade-profile',
+                    'segmentId': segment_id,
+                },
+            },
+            'samples': profile_samples,
+        },
+        'method': (
+            'Cadastral street segment selected by confirmed lot street name, address range when available, '
+            'and geometric proximity. Elevations are interpolated from the MDT; the local street profile spans '
+            'up to 20 m on each side of the nearest axis point. The candidate access point is the nearest lot-boundary '
+            'point to the street axis. This is a preliminary terrain screening and does not represent surveyed curb, '
+            'gutter, sidewalk, driveway approval or legal frontage.'
+        ),
+    }
+
+
 def main():
     args = parse_args()
     if not args.zip_specs:
@@ -972,8 +1246,9 @@ def main():
     to_projected = Transformer.from_crs(4326, EXPECTED_EPSG, always_xy=True)
     to_wgs84 = Transformer.from_crs(EXPECTED_EPSG, 4326, always_xy=True)
     lot_projected = transform(to_projected.transform, lot_wgs84)
-    context_polygon = lot_projected.buffer(CONTEXT_BUFFER_M)
-    context_minx, context_miny, context_maxx, context_maxy = context_polygon.bounds
+    analysis_context_polygon = lot_projected.buffer(ANALYSIS_CONTEXT_BUFFER_M)
+    hydrology_context_polygon = lot_projected.buffer(CONTEXT_BUFFER_M)
+    context_minx, context_miny, context_maxx, context_maxy = analysis_context_polygon.bounds
 
     context_xs = []
     context_ys = []
@@ -1034,7 +1309,7 @@ def main():
             candidate_indexes = np.flatnonzero(context_mask)
             if candidate_indexes.size:
                 in_buffer = contains_xy(
-                    context_polygon, x[candidate_indexes], y[candidate_indexes]
+                    analysis_context_polygon, x[candidate_indexes], y[candidate_indexes]
                 )
                 selected = candidate_indexes[in_buffer]
             else:
@@ -1079,6 +1354,10 @@ def main():
         lot_projected, context_points[:, 0], context_points[:, 1]
     )
     inside_points = context_points[inside_mask]
+    hydrology_mask = contains_xy(
+        hydrology_context_polygon, context_points[:, 0], context_points[:, 1]
+    )
+    hydrology_points = context_points[hydrology_mask]
     if inside_points.shape[0] < 3:
         raise SystemExit(
             f"Insufficient MDT points inside lot: {inside_points.shape[0]}"
@@ -1134,10 +1413,24 @@ def main():
         to_wgs84,
     )
     hydrology = build_hydrology(
-        context_points,
+        hydrology_points,
         lot_projected,
-        context_polygon,
+        hydrology_context_polygon,
         to_wgs84,
+    )
+    street_candidates = (
+        json.loads(args.street_candidates_json)
+        if args.street_candidates_json
+        else {"type": "FeatureCollection", "features": []}
+    )
+    access = build_access_analysis(
+        lot_projected,
+        context_points,
+        to_projected,
+        to_wgs84,
+        street_candidates,
+        args.street_name,
+        args.street_number,
     )
 
     tin_weighted_mean = (
@@ -1180,8 +1473,8 @@ def main():
             "method": "1 m linear interpolation over Delaunay triangulation; finite-difference gradient sampled inside lot",
         },
         "surface": {
-            "version": "terrain-surface-v4",
-            "contextBufferM": CONTEXT_BUFFER_M,
+            "version": "terrain-surface-v5",
+            "contextBufferM": ANALYSIS_CONTEXT_BUFFER_M,
             "grid": grid["product"],
             "tin": tin_product,
             "tinTriangleCount": len(tin_product["features"]),
@@ -1190,6 +1483,7 @@ def main():
             "contourIntervalsM": list(CONTOUR_INTERVALS_M),
             "profiles": profiles,
             "hydrology": hydrology,
+            "access": access,
         },
         "lowPoint": point_payload(low_index),
         "highPoint": point_payload(high_index),

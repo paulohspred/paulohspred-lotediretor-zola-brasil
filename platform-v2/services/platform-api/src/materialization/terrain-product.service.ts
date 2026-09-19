@@ -4,7 +4,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 
 const SOURCE_CODE = 'PMSP_TERRITORIO_TOPOGRAFIA';
-const ANALYSIS_VERSION = 'terrain-mdt-2020-surface-v4';
+const ANALYSIS_VERSION = 'terrain-mdt-2020-surface-v5';
 
 type SnapshotRow = {
   id: string;
@@ -39,6 +39,7 @@ type TerrainManifest = {
       tinAreaWeightedMeanSlopePercent: number | null;
       profiles: Record<string, unknown>;
       hydrology: Record<string, unknown>;
+      access: Record<string, unknown>;
     };
   };
 };
@@ -141,6 +142,7 @@ export class TerrainProductService {
         availableContourIntervalsM: analysis.surface.contourIntervalsM,
         profiles: analysis.surface.profiles,
         hydrology: analysis.surface.hydrology,
+        access: analysis.surface.access,
       },
     };
   }

@@ -12,9 +12,14 @@ const execFileAsync = promisify(execFile);
 
 const SUBJECT_TYPE = 'SP_LOT';
 const SOURCE_CODE = 'PMSP_TERRITORIO_TOPOGRAFIA';
+const ROAD_SOURCE_CODE = 'PMSP_SISTEMA_VIARIO';
 const INDEX_TYPE_NAME = 'geoportal:quadricula_folha_mdt_mds_2020';
+const ROAD_TYPE_NAME = 'geoportal:segmento_logradouro';
 const DOWNLOAD_VERSION = 'terrain-mdt-2020-download-v1';
-const ANALYSIS_VERSION = 'terrain-mdt-2020-surface-v4';
+const ANALYSIS_VERSION = 'terrain-mdt-2020-surface-v5';
+const ROAD_CONNECTOR_VERSION = 'sistema-viario-segmento-v1';
+const TERRAIN_INDEX_PADDING_DEGREES = 0.001;
+const MAX_ROAD_FEATURES = 100;
 const MAX_SHEETS = 8;
 const MAX_ZIP_BYTES = 50 * 1024 * 1024;
 
@@ -45,6 +50,32 @@ type SourceConfig = {
   datasetCode: string;
   wfsUrl: string;
   downloadUrl: string;
+};
+
+type RoadSourceConfig = {
+  sourceRegistryId: string;
+  sourceCode: string;
+  datasetCode: string;
+  wfsUrl: string;
+};
+
+type LotAddressRow = {
+  street_name: string | null;
+  street_number: string | null;
+};
+
+type StreetInput = {
+  sourceRegistryId: string;
+  snapshotId: string;
+  objectKey: string;
+  sha256: string;
+  requestUrl: string;
+  streetName: string;
+  streetNumber: string | null;
+  featureCollection: {
+    type: 'FeatureCollection';
+    features: Array<Record<string, unknown>>;
+  };
 };
 
 type SheetFeature = {
@@ -80,6 +111,37 @@ type TerrainPoint = {
   longitude: number;
   latitude: number;
   elevationM: number;
+};
+
+type TerrainAccessAnalysis = {
+  status: 'DISPONIVEL' | 'NAO_DISPONIVEL';
+  streetName?: string | null;
+  streetNumber?: string | null;
+  reason?: string;
+  selectedSegmentId?: string | number | null;
+  selectionMethod?: string;
+  addressRangeMatched?: boolean;
+  streetCenterlineDistanceM?: number;
+  lotBoundaryElevationM?: number;
+  streetAxisElevationM?: number;
+  lotAboveStreetM?: number;
+  straightConnectionGradePercent?: number;
+  candidateAccessPoint?: Record<string, unknown>;
+  streetAxisPoint?: Record<string, unknown>;
+  accessConnector?: Record<string, unknown>;
+  streetProfile?: {
+    spacingM: number;
+    lengthM: number;
+    elevationStartM: number;
+    elevationEndM: number;
+    netGradePercent: number;
+    medianAbsoluteGradePercent: number;
+    p95AbsoluteGradePercent: number;
+    maxAbsoluteGradePercent: number;
+    line: Record<string, unknown>;
+    samples: Array<Record<string, unknown>>;
+  };
+  method: string;
 };
 
 type TerrainAnalysis = {
@@ -169,6 +231,7 @@ type TerrainAnalysis = {
       flowPaths: Record<string, unknown>;
       outlets: Record<string, unknown>;
     };
+    access: TerrainAccessAnalysis;
   };
   lowPoint: TerrainPoint;
   highPoint: TerrainPoint;
@@ -268,6 +331,23 @@ function sha256(bytes: Buffer | string): string {
   return createHash('sha256').update(bytes).digest('hex');
 }
 
+function normalizeStreetName(value: string): string {
+  const normalized = value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const tokens = normalized.split(' ').filter(Boolean);
+  const prefixes = new Set([
+    'R', 'RUA', 'AV', 'AVENIDA', 'AL', 'ALAMEDA', 'PC', 'PRACA',
+    'TV', 'TRAV', 'TRAVESSA', 'EST', 'ESTRADA', 'ROD', 'RODOVIA',
+  ]);
+  while (tokens.length > 1 && prefixes.has(tokens[0])) tokens.shift();
+  return tokens.join(' ');
+}
+
 function geometryBbox(geometry: JsonGeometry): [number, number, number, number] {
   const xs: number[] = [];
   const ys: number[] = [];
@@ -311,6 +391,34 @@ async function loadLotGeometry(pool: Pool, lotId: string): Promise<LotGeometryRo
   return row;
 }
 
+async function loadLotAddress(pool: Pool, lotId: string): Promise<LotAddressRow> {
+  const result = await pool.query<LotAddressRow>(
+    `SELECT
+       (
+         SELECT value_text
+         FROM evidence.evidence
+         WHERE subject_type = 'SP_LOT'
+           AND subject_id = $1
+           AND evidence_type = 'SP_LOT_STREET_NAME'
+           AND status = 'CONFIRMADO'
+         ORDER BY recorded_at DESC, id DESC
+         LIMIT 1
+       ) AS street_name,
+       (
+         SELECT value_text
+         FROM evidence.evidence
+         WHERE subject_type = 'SP_LOT'
+           AND subject_id = $1
+           AND evidence_type = 'SP_LOT_STREET_NUMBER'
+           AND status = 'CONFIRMADO'
+         ORDER BY recorded_at DESC, id DESC
+         LIMIT 1
+       ) AS street_number`,
+    [lotId],
+  );
+  return result.rows[0] ?? { street_name: null, street_number: null };
+}
+
 async function resolveSource(pool: Pool, municipalityIbge: string): Promise<SourceConfig> {
   const result = await pool.query<SourceRow>(
     `SELECT
@@ -350,6 +458,42 @@ async function resolveSource(pool: Pool, municipalityIbge: string): Promise<Sour
   };
 }
 
+async function resolveRoadSource(
+  pool: Pool,
+  municipalityIbge: string,
+): Promise<RoadSourceConfig> {
+  const result = await pool.query<SourceRow>(
+    `SELECT
+       sr.id::text AS source_registry_id,
+       sr.source_code,
+       sr.dataset_code,
+       sr.parser_version,
+       se.endpoint_type,
+       se.url,
+       upper(se.method) AS method
+     FROM core.source_registry sr
+     JOIN core.municipality m ON m.id = sr.municipality_id
+     JOIN core.source_endpoint se ON se.source_registry_id = sr.id
+     WHERE sr.source_code = $1
+       AND m.ibge_code = $2
+       AND se.enabled = true
+       AND se.endpoint_type = 'WFS'
+     ORDER BY se.url`,
+    [ROAD_SOURCE_CODE, municipalityIbge],
+  );
+  const wfs = result.rows[0];
+  if (!wfs) {
+    throw new Error(`Road source ${ROAD_SOURCE_CODE} requires an enabled WFS endpoint`);
+  }
+  if (wfs.method !== 'GET') throw new Error('Road WFS endpoint must use GET');
+  return {
+    sourceRegistryId: wfs.source_registry_id,
+    sourceCode: wfs.source_code,
+    datasetCode: wfs.dataset_code,
+    wfsUrl: wfs.url,
+  };
+}
+
 async function listSheets(
   source: SourceConfig,
   geometry: JsonGeometry,
@@ -364,7 +508,7 @@ async function listSheets(
     count: String(MAX_SHEETS + 1),
     outputFormat: 'application/json',
     srsName: 'EPSG:4326',
-    bbox: `${west},${south},${east},${north},EPSG:4326`,
+    bbox: `${west - TERRAIN_INDEX_PADDING_DEGREES},${south - TERRAIN_INDEX_PADDING_DEGREES},${east + TERRAIN_INDEX_PADDING_DEGREES},${north + TERRAIN_INDEX_PADDING_DEGREES},EPSG:4326`,
     propertyName: [
       'cd_quadricula',
       'an_levantamento',
@@ -456,7 +600,7 @@ async function ensureObject(
 
 async function persistSourceSnapshot(
   pool: Pool,
-  source: SourceConfig,
+  source: Pick<SourceConfig, 'sourceRegistryId'> | RoadSourceConfig,
   objectKey: string,
   contentSha256: string,
   mediaType: string,
@@ -494,6 +638,130 @@ async function persistSourceSnapshot(
   );
   if (!existing.rows[0]) throw new Error('Source snapshot insert conflict could not be resolved');
   return existing.rows[0];
+}
+
+async function fetchStreetInput(
+  pool: Pool,
+  s3: S3Client,
+  bucket: string,
+  source: RoadSourceConfig,
+  geometry: JsonGeometry,
+  address: LotAddressRow,
+): Promise<StreetInput | null> {
+  const streetName = String(address.street_name ?? '').trim();
+  if (!streetName) return null;
+
+  const [west, south, east, north] = geometryBbox(geometry);
+  const url = new URL(source.wfsUrl);
+  url.search = new URLSearchParams({
+    service: 'WFS',
+    version: '2.0.0',
+    request: 'GetFeature',
+    typeNames: ROAD_TYPE_NAME,
+    count: String(MAX_ROAD_FEATURES),
+    outputFormat: 'application/json',
+    srsName: 'EPSG:4326',
+    bbox: `${west - TERRAIN_INDEX_PADDING_DEGREES},${south - TERRAIN_INDEX_PADDING_DEGREES},${east + TERRAIN_INDEX_PADDING_DEGREES},${north + TERRAIN_INDEX_PADDING_DEGREES},EPSG:4326`,
+  }).toString();
+
+  const response = await fetch(url, {
+    headers: {
+      accept: 'application/json',
+      'user-agent': 'LoteDiretor-TerrainMaterializer/0.1',
+    },
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!response.ok) {
+    throw new Error(`Road WFS failed with HTTP ${response.status}`);
+  }
+  const payload = (await response.json()) as {
+    features?: Array<{
+      id?: string;
+      type?: string;
+      geometry?: Record<string, unknown> | null;
+      properties?: Record<string, unknown>;
+    }>;
+  };
+  const targetName = normalizeStreetName(streetName);
+  const features = (payload.features ?? [])
+    .filter((feature) =>
+      normalizeStreetName(String(feature.properties?.nm_logradouro ?? '')) ===
+      targetName,
+    )
+    .map((feature) => ({
+      type: 'Feature',
+      id: feature.id ?? null,
+      geometry: feature.geometry ?? null,
+      properties: {
+        cd_identificador: feature.properties?.cd_identificador ?? null,
+        cd_identificador_logradouro:
+          feature.properties?.cd_identificador_logradouro ?? null,
+        codlog: feature.properties?.codlog ?? null,
+        cd_tipo_logradouro: feature.properties?.cd_tipo_logradouro ?? null,
+        nm_logradouro: feature.properties?.nm_logradouro ?? null,
+        cd_numero_inicial_par:
+          feature.properties?.cd_numero_inicial_par ?? null,
+        cd_numero_final_par: feature.properties?.cd_numero_final_par ?? null,
+        cd_numero_inicial_impar:
+          feature.properties?.cd_numero_inicial_impar ?? null,
+        cd_numero_final_impar:
+          feature.properties?.cd_numero_final_impar ?? null,
+        cd_numero_ordem_segmento:
+          feature.properties?.cd_numero_ordem_segmento ?? null,
+        qt_leito_carrocavel: feature.properties?.qt_leito_carrocavel ?? null,
+      },
+    }))
+    .sort((left, right) =>
+      String(left.properties.cd_identificador ?? '').localeCompare(
+        String(right.properties.cd_identificador ?? ''),
+      ),
+    );
+
+  const featureCollection = {
+    type: 'FeatureCollection' as const,
+    features: features as Array<Record<string, unknown>>,
+  };
+  const bytes = Buffer.from(stableJson(featureCollection), 'utf8');
+  const contentSha256 = sha256(bytes);
+  const objectKey =
+    `raw/${source.sourceCode}/segmento-logradouro/${contentSha256}.geojson`;
+  await ensureObject(s3, bucket, objectKey, bytes, 'application/geo+json');
+  const snapshot = await persistSourceSnapshot(
+    pool,
+    source,
+    objectKey,
+    contentSha256,
+    'application/geo+json',
+    bytes.length,
+    ROAD_CONNECTOR_VERSION,
+    {
+      snapshotKind: 'ROAD_SEGMENT_QUERY',
+      requestedStreetName: streetName,
+      requestedStreetNumber: address.street_number,
+      requestUrl: url.toString(),
+      typeName: ROAD_TYPE_NAME,
+    },
+    features.length,
+  );
+
+  await pool.query(
+    `UPDATE core.source_registry
+     SET last_checked_at = now(), ingestion_status = 'healthy', updated_at = now()
+     WHERE id = $1::uuid`,
+    [source.sourceRegistryId],
+  );
+
+  return {
+    sourceRegistryId: source.sourceRegistryId,
+    snapshotId: snapshot.id,
+    objectKey: snapshot.object_key,
+    sha256: snapshot.sha256,
+    requestUrl: url.toString(),
+    streetName,
+    streetNumber:
+      address.street_number == null ? null : String(address.street_number),
+    featureCollection,
+  };
 }
 
 async function downloadSheet(
@@ -568,10 +836,24 @@ async function downloadSheet(
 async function analyzeTerrain(
   geometry: JsonGeometry,
   inputs: InputSnapshot[],
+  address: LotAddressRow,
+  streetInput: StreetInput | null,
 ): Promise<TerrainAnalysis> {
   const scriptPath = fileURLToPath(new URL('./analyze-terrain-laz.py', import.meta.url));
   const python = process.env.TERRAIN_PYTHON ?? 'python3';
   const args = [scriptPath, '--lot-geometry-json', JSON.stringify(geometry)];
+  if (address.street_name) {
+    args.push('--street-name', String(address.street_name));
+  }
+  if (address.street_number) {
+    args.push('--street-number', String(address.street_number));
+  }
+  if (streetInput) {
+    args.push(
+      '--street-candidates-json',
+      JSON.stringify(streetInput.featureCollection),
+    );
+  }
   inputs.forEach((input) => {
     args.push('--zip', `${input.sheetCode}=${input.localPath}`);
   });
@@ -595,7 +877,7 @@ function factsFromAnalysis(analysis: TerrainAnalysis): EvidenceFact[] {
     'MDT 2020 LiDAR points clipped to the versioned lot geometry in SIRGAS 2000 / UTM 23S (EPSG:31983); duplicate seam points removed';
   const planeMethod =
     'Least-squares best-fit plane over deduplicated MDT points inside the versioned lot geometry; reports global terrain gradient, not local maximum slope';
-  return [
+  const facts: EvidenceFact[] = [
     {
       evidenceType: 'SP_LOT_TERRAIN_ELEVATION_MIN',
       locator: 'analysis:elevation:min',
@@ -824,6 +1106,91 @@ function factsFromAnalysis(analysis: TerrainAnalysis): EvidenceFact[] {
       calculationMethod: analysis.surface.hydrology.method,
     },
   ];
+
+  const access = analysis.surface.access;
+  if (
+    access.status === 'DISPONIVEL' &&
+    access.streetProfile &&
+    access.streetCenterlineDistanceM != null &&
+    access.lotBoundaryElevationM != null &&
+    access.streetAxisElevationM != null &&
+    access.lotAboveStreetM != null &&
+    access.straightConnectionGradePercent != null
+  ) {
+    facts.push(
+      {
+        evidenceType: 'SP_LOT_TERRAIN_ACCESS_STREET_SEGMENT',
+        locator: 'analysis:surface:access:street-segment',
+        valueText: String(access.selectedSegmentId ?? ''),
+        calculationMethod: access.method,
+      },
+      {
+        evidenceType: 'SP_LOT_TERRAIN_ACCESS_CENTERLINE_DISTANCE',
+        locator: 'analysis:surface:access:centerline-distance',
+        valueText: metric(access.streetCenterlineDistanceM, 3),
+        unit: 'm',
+        calculationMethod: access.method,
+      },
+      {
+        evidenceType: 'SP_LOT_TERRAIN_ACCESS_LOT_BOUNDARY_ELEVATION',
+        locator: 'analysis:surface:access:lot-boundary-elevation',
+        valueText: metric(access.lotBoundaryElevationM, 3),
+        unit: 'm',
+        calculationMethod: access.method,
+      },
+      {
+        evidenceType: 'SP_LOT_TERRAIN_ACCESS_STREET_AXIS_ELEVATION',
+        locator: 'analysis:surface:access:street-axis-elevation',
+        valueText: metric(access.streetAxisElevationM, 3),
+        unit: 'm',
+        calculationMethod: access.method,
+      },
+      {
+        evidenceType: 'SP_LOT_TERRAIN_ACCESS_ELEVATION_DIFFERENCE',
+        locator: 'analysis:surface:access:elevation-difference',
+        valueText: metric(access.lotAboveStreetM, 3),
+        unit: 'm',
+        calculationMethod: access.method,
+      },
+      {
+        evidenceType: 'SP_LOT_TERRAIN_ACCESS_STRAIGHT_GRADE',
+        locator: 'analysis:surface:access:straight-grade',
+        valueText: metric(access.straightConnectionGradePercent, 2),
+        unit: '%',
+        calculationMethod: access.method,
+      },
+      {
+        evidenceType: 'SP_LOT_TERRAIN_STREET_PROFILE_LENGTH',
+        locator: 'analysis:surface:access:street-profile:length',
+        valueText: metric(access.streetProfile.lengthM, 2),
+        unit: 'm',
+        calculationMethod: access.method,
+      },
+      {
+        evidenceType: 'SP_LOT_TERRAIN_STREET_GRADE_MEDIAN',
+        locator: 'analysis:surface:access:street-profile:grade-median',
+        valueText: metric(access.streetProfile.medianAbsoluteGradePercent, 2),
+        unit: '%',
+        calculationMethod: access.method,
+      },
+      {
+        evidenceType: 'SP_LOT_TERRAIN_STREET_GRADE_P95',
+        locator: 'analysis:surface:access:street-profile:grade-p95',
+        valueText: metric(access.streetProfile.p95AbsoluteGradePercent, 2),
+        unit: '%',
+        calculationMethod: access.method,
+      },
+      {
+        evidenceType: 'SP_LOT_TERRAIN_STREET_GRADE_MAX',
+        locator: 'analysis:surface:access:street-profile:grade-max',
+        valueText: metric(access.streetProfile.maxAbsoluteGradePercent, 2),
+        unit: '%',
+        calculationMethod: access.method,
+      },
+    );
+  }
+
+  return facts;
 }
 
 async function persistEvidence(
@@ -834,6 +1201,7 @@ async function persistEvidence(
   fact: EvidenceFact,
   analysis: TerrainAnalysis,
   inputs: InputSnapshot[],
+  streetInput: StreetInput | null,
 ): Promise<{ id: string; created: boolean }> {
   const client: PoolClient = await pool.connect();
   try {
@@ -911,6 +1279,12 @@ async function persistEvidence(
               analysis.surface.hydrology.preferredRunoffDirectionDegrees,
             hydrologyDepressionMaxFillDepthM:
               analysis.surface.hydrology.depressionScreening.maxFillDepthM,
+            accessStatus: analysis.surface.access.status,
+            accessSelectedStreetSegmentId:
+              analysis.surface.access.selectedSegmentId ?? null,
+            accessSelectionMethod: analysis.surface.access.selectionMethod ?? null,
+            roadInputSnapshotId: streetInput?.snapshotId ?? null,
+            roadInputSha256: streetInput?.sha256 ?? null,
           }),
         ],
       );
@@ -935,6 +1309,32 @@ async function persistEvidence(
           input.downloadUrl,
           `LoteDiretor — MDT 2020 — folha ${input.sheetCode}`,
           `sheet:${input.sheetCode}`,
+        ],
+      );
+    }
+
+    const isRoadDerived =
+      fact.evidenceType.startsWith('SP_LOT_TERRAIN_ACCESS_') ||
+      fact.evidenceType.startsWith('SP_LOT_TERRAIN_STREET_');
+    if (streetInput && isRoadDerived) {
+      await client.query(
+        `INSERT INTO evidence.citation (
+           evidence_id, source_url, document_title, source_locator
+         )
+         SELECT $1::uuid, $2, $3, $4
+         WHERE NOT EXISTS (
+           SELECT 1 FROM evidence.citation
+           WHERE evidence_id = $1::uuid
+             AND source_locator = $4
+             AND COALESCE(source_url, '') = COALESCE($2, '')
+         )`,
+        [
+          evidenceId,
+          streetInput.requestUrl,
+          'LoteDiretor — segmento viário cadastral',
+          `road-snapshot:${streetInput.snapshotId};segment:${String(
+            analysis.surface.access.selectedSegmentId ?? 'consulta',
+          )}`,
         ],
       );
     }
@@ -996,10 +1396,38 @@ async function main(): Promise<void> {
   const tempRoot = await mkdtemp(join(tmpdir(), 'lotediretor-terrain-'));
 
   try {
-    const [lot, source] = await Promise.all([
+    const [lot, source, address] = await Promise.all([
       loadLotGeometry(pool, options.lotId),
       resolveSource(pool, options.municipalityIbge),
+      loadLotAddress(pool, options.lotId),
     ]);
+
+    let streetInput: StreetInput | null = null;
+    let streetLookupError: string | null = null;
+    let roadSource: RoadSourceConfig | null = null;
+    try {
+      roadSource = await resolveRoadSource(pool, options.municipalityIbge);
+      streetInput = await fetchStreetInput(
+        pool,
+        s3,
+        bucket,
+        roadSource,
+        lot.geometry_json,
+        address,
+      );
+    } catch (error) {
+      streetLookupError =
+        error instanceof Error ? error.message : String(error);
+      if (roadSource) {
+        await pool.query(
+          `UPDATE core.source_registry
+           SET last_checked_at = now(), ingestion_status = 'degraded', updated_at = now()
+           WHERE id = $1::uuid`,
+          [roadSource.sourceRegistryId],
+        );
+      }
+    }
+
     const sheets = await listSheets(source, lot.geometry_json);
     const inputs: InputSnapshot[] = [];
     for (const sheet of sheets) {
@@ -1008,7 +1436,12 @@ async function main(): Promise<void> {
       );
     }
 
-    const analysis = await analyzeTerrain(lot.geometry_json, inputs);
+    const analysis = await analyzeTerrain(
+      lot.geometry_json,
+      inputs,
+      address,
+      streetInput,
+    );
     const manifest = {
       schemaVersion: 1,
       snapshotKind: 'TERRAIN_ANALYSIS',
@@ -1019,6 +1452,19 @@ async function main(): Promise<void> {
       lotGeometrySourceSnapshotSha256: lot.source_snapshot_sha256,
       lotGeometrySha256: sha256(stableJson(lot.geometry_json)),
       lotGeometry: lot.geometry_json,
+      confirmedAddress: {
+        streetName: address.street_name,
+        streetNumber: address.street_number,
+      },
+      roadInput: streetInput
+        ? {
+            snapshotId: streetInput.snapshotId,
+            objectKey: streetInput.objectKey,
+            sha256: streetInput.sha256,
+            featureCount: streetInput.featureCollection.features.length,
+          }
+        : null,
+      roadLookupError: streetLookupError,
       inputSheets: inputs.map((input) => ({
         sheetCode: input.sheetCode,
         snapshotId: input.snapshotId,
@@ -1054,7 +1500,12 @@ async function main(): Promise<void> {
         snapshotKind: 'TERRAIN_ANALYSIS',
         requestedLotId: options.lotId,
         analysisVersion: ANALYSIS_VERSION,
-        inputSnapshotIds: inputs.map((input) => input.snapshotId),
+        inputSnapshotIds: [
+          ...inputs.map((input) => input.snapshotId),
+          ...(streetInput ? [streetInput.snapshotId] : []),
+        ],
+        roadInputSnapshotId: streetInput?.snapshotId ?? null,
+        roadLookupError: streetLookupError,
         inputSheetCodes: inputs.map((input) => input.sheetCode),
         lotGeometryEvidenceId: lot.evidence_id,
       },
@@ -1073,6 +1524,7 @@ async function main(): Promise<void> {
           fact,
           analysis,
           inputs,
+          streetInput,
         ),
       );
     }
@@ -1099,6 +1551,11 @@ async function main(): Promise<void> {
         bestFitSlopePercent: analysis.bestFitPlane.slopePercent,
         downslopeAspectDegrees: analysis.bestFitPlane.downslopeAspectDegrees,
         downslopeAspectLabel: analysis.bestFitPlane.downslopeAspectLabel,
+        accessStatus: analysis.surface.access.status,
+        selectedStreetSegmentId:
+          analysis.surface.access.selectedSegmentId ?? null,
+        streetCenterlineDistanceM:
+          analysis.surface.access.streetCenterlineDistanceM ?? null,
       }),
     );
   } finally {
